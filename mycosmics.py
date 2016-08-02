@@ -26,7 +26,7 @@ from scipy.integrate import dblquad
 #  return f;
 #}
 
-def differentialFlux(energy,theta):
+def differentialFlux(energy,costheta):
   """
     dI
   -----
@@ -39,12 +39,10 @@ def differentialFlux(energy,theta):
   p3 = 0.958633
   p4 = 0.0407253
   p5 = 0.817285
-  costheta = cos(theta)
   
   costhetastar = sqrt((costheta**2+p1**2+p2*(costheta**p3)+p4*(costheta**p5))/(1.+p1**2+p2+p4))
   twopointseven = energy*(1+3.64/(energy*(costhetastar**1.29)))
   f = .140*(twopointseven**(-2.7))*((1./(1.+1.1*energy*costhetastar/115.))+0.054/(1.+1.1*energy*costhetastar/850.))
-  f *= -sin(theta)
   return f
 
 #######################################3
@@ -60,21 +58,25 @@ def differentialFlux(energy,theta):
 #######################################3
 
 def mcInt(N,emin,emax,thetamin,thetamax):
-  totalvolume = (thetamax-thetamin)*(emax-emin)
-  fmax = differentialFlux(emin,thetamin)
+  print N,emin,emax,thetamin,thetamax
+  costhetamin = cos(thetamin)
+  costhetamax = cos(thetamax)
+  totalvolume = abs(costhetamax-costhetamin)*(emax-emin)
+  fmax = differentialFlux(emin,costhetamin)
 
   nAccept = 0
   fvalSum = 0.
   energies = []
   thetas = []
   while nAccept < N:
-    theta = rand()*(thetamax-thetamin)+thetamin
+    costheta = rand()*(costhetamax-costhetamin)+costhetamin
     energy = rand()*(emax-emin)+emin
-    fval = differentialFlux(energy,theta)
+    fval = differentialFlux(energy,costheta)
     fvalSum += fval
 
     randfval = rand()*fmax
     if randfval <= fval:
+      theta = math.acos(costheta)
       thetas.append(theta)
       energies.append(energy)
       nAccept += 1
@@ -130,7 +132,7 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
     particles.append(tmp)
   return particles, integralEstimate
 
-muons, integralEst = sample(1000,0.12,10,0.0001,math.pi/2.,-1,1,-1,1,-1,1)
+muons, integralEst = sample(1000,0.12,10,0.0001,90.*math.pi/180,-1,1,-1,1,-1,1)
 print integralEst
 print len(muons)
 #for muon in muons:
@@ -140,7 +142,7 @@ from matplotlib import pyplot as mpl
 
 fig, ax = mpl.subplots()
 
-thetas = linspace(0,pi)
+thetas = linspace(0,pi/2.)
 costhetas = cos(thetas)
 
 for energy in arange(1,11):
@@ -155,8 +157,10 @@ fig.savefig("test.png")
 fig, ax = mpl.subplots()
 
 energies = logspace(-2,1)
-f = differentialFlux(energies,1.)
-ax.plot(energies,f) 
+for theta in linspace(0,pi/2,5):
+  f = differentialFlux(energies,cos(theta))
+  ax.plot(energies,f, label=r"$\theta$ = %s" % (theta*180./pi)) 
+ax.legend()
 fig.savefig("test2.png")
 
 import ROOT as root
@@ -164,9 +168,13 @@ from helpers import *
 root.gROOT.SetBatch(True)
 c = root.TCanvas()
 
-thetaHist = root.TH1F("theta","",30,0,180)
+thetaHist = root.TH1F("theta","",30,0,90)
 phiHist = root.TH1F("phi","",30,-180,180)
 energyHist = root.TH1F("energy","",100,0,10)
+
+setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
+setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
+setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
 
 for muon in muons:
   thetaHist.Fill(muon.thetaz*180/math.pi)
@@ -179,3 +187,13 @@ phiHist.Draw()
 c.SaveAs("phiHist.png")
 energyHist.Draw()
 c.SaveAs("energyHist.png")
+
+thetaIntHist = getIntegralHist(thetaHist,False)
+energyIntHist = getIntegralHist(energyHist,False)
+setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Integral of Events #leq X")
+setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Integral of Events #leq X")
+
+thetaIntHist.Draw()
+c.SaveAs("thetaIntHist.png")
+energyIntHist.Draw()
+c.SaveAs("energyIntHist.png")
