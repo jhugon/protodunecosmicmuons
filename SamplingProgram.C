@@ -6,13 +6,13 @@
 #include <time.h>
 #include <iomanip>
 
-void SamplingSally()
+void SamplingProgram()
 {
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //                    PHASE 1: THETA VALUES
  
 //The following variables should be initialized as needed by the user
- const int numberofevents = 1000;
+ const int numberofevents = 10000;
 
  const int maxenergy = 1000; //Events only generated up to this energy (GeV)
  //Lower energy range means more accurate energy sampling within that range
