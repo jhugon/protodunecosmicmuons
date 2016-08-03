@@ -190,10 +190,18 @@ c.SaveAs("energyHist.png")
 
 thetaIntHist = getIntegralHist(thetaHist,False)
 energyIntHist = getIntegralHist(energyHist,False)
-setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Integral of Events #leq X")
-setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Integral of Events #leq X")
+setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Events #geq X")
+setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Events #geq X")
+
+cos2ThetaGraph = root.TGraph()
+cos2ThetaGraph.SetLineColor(root.kBlue)
+for i in range(1,thetaIntHist.GetNbinsX()):
+  tmpTheta = thetaIntHist.GetXaxis().GetBinCenter(i)
+  tmpCos2 = thetaHist.Integral()*cos(tmpTheta*math.pi/180.)**2
+  cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
 
 thetaIntHist.Draw()
+cos2ThetaGraph.Draw("l")
 c.SaveAs("thetaIntHist.png")
 energyIntHist.Draw()
 c.SaveAs("energyIntHist.png")
