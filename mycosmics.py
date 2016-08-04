@@ -63,6 +63,8 @@ def mcInt(N,emin,emax,thetamin,thetamax):
   print N,emin,emax,thetamin,thetamax
   costhetamin = cos(thetamin)
   costhetamax = cos(thetamax)
+  sinthetamin = sin(thetamin)
+  sinthetamax = sin(thetamax)
   totalvolume = abs(costhetamax-costhetamin)*(emax-emin)
   fmax = differentialFlux(emin,costhetamin)
 
@@ -71,14 +73,16 @@ def mcInt(N,emin,emax,thetamin,thetamax):
   energies = []
   thetas = []
   while nAccept < N:
-    costheta = rand()*(costhetamax-costhetamin)+costhetamin
+    #costheta = rand()*(costhetamax-costhetamin)+costhetamin
+    sintheta = rand()*(sinthetamax-sinthetamin)+sinthetamin
+    theta = math.asin(sintheta)
+    costheta = cos(theta)
     energy = rand()*(emax-emin)+emin
     fval = differentialFlux(energy,costheta)
     fvalSum += fval
 
     randfval = rand()*fmax
     if randfval <= fval:
-      theta = math.acos(costheta)
       thetas.append(theta)
       energies.append(energy)
       nAccept += 1
@@ -136,7 +140,8 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
 if __name__ == "__main__":
 
-  muons, integralEst = sample(1000,0.12,10,0.0001,90.*math.pi/180,-1,1,-1,1,-1,1)
+  muons, integralEst = sample(10000,0.12,10,0.000,90.*math.pi/180,-1,1,-1,1,-1,1)
+  #muons, integralEst = sample(100000,2.9999,3.111,0.000,90.*math.pi/180,-1,1,-1,1,-1,1)
   print integralEst
   print len(muons)
   #for muon in muons:
@@ -160,27 +165,38 @@ if __name__ == "__main__":
     phiHist.Fill(muon.phiz*180/math.pi)
     energyHist.Fill(muon.e)
   
-  thetaHist.Draw()
-  c.SaveAs("thetaHist.png")
   phiHist.Draw()
   c.SaveAs("phiHist.png")
   energyHist.Draw()
   c.SaveAs("energyHist.png")
+
+  thetaHistIntegral = thetaHist.Integral()
+
+  cos2ThetaGraph = root.TGraph()
+  cos2ThetaGraph.SetLineColor(root.kBlue)
+  #funcNormalization = (thetaHistIntegral/math.pi/0.25)
+  #funcNormalization = (thetaHistIntegral/(math.pi/4.))/(thetaHist.GetNbinsX())
+  funcNormalization = thetaHist.GetBinContent(1)/cos(thetaHist.GetXaxis().GetBinCenter(1)*math.pi/180.)**2
+  print funcNormalization
+  print thetaHist.GetBinContent(1)
+  print thetaHist.GetBinContent(1)/funcNormalization
+  for i in range(1,thetaHist.GetNbinsX()):
+    tmpTheta = thetaHist.GetXaxis().GetBinCenter(i)
+    tmpCos2 = funcNormalization*cos(tmpTheta*math.pi/180.)**2
+    cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
+
+  thetaHist.Draw()
+  cos2ThetaGraph.Draw("l")
+  c.SaveAs("thetaHist.png")
+
+  #############################################
   
   thetaIntHist = getIntegralHist(thetaHist,False)
   energyIntHist = getIntegralHist(energyHist,False)
   setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Events #geq X")
   setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Events #geq X")
   
-  cos2ThetaGraph = root.TGraph()
-  cos2ThetaGraph.SetLineColor(root.kBlue)
-  for i in range(1,thetaIntHist.GetNbinsX()):
-    tmpTheta = thetaIntHist.GetXaxis().GetBinCenter(i)
-    tmpCos2 = thetaHist.Integral()*cos(tmpTheta*math.pi/180.)**2
-    cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
-  
   thetaIntHist.Draw()
-  cos2ThetaGraph.Draw("l")
   c.SaveAs("thetaIntHist.png")
   energyIntHist.Draw()
   c.SaveAs("energyIntHist.png")
