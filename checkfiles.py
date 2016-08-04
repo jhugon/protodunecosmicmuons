@@ -20,7 +20,7 @@ class Particle(object):
     self.status = int(particleLineMatch.group(1))
     self.pdgid = int(particleLineMatch.group(2))
     self.px = float(particleLineMatch.group(7))
-    self.py = float(particleLineMatch.group(8))
+    self.py = -abs(float(particleLineMatch.group(8)))
     self.pz = float(particleLineMatch.group(9))
     self.p = math.sqrt(self.px**2+self.py**2+self.pz**2)
     self.e =  float(particleLineMatch.group(10))
@@ -29,10 +29,11 @@ class Particle(object):
     self.y =  float(particleLineMatch.group(13))
     self.z =  float(particleLineMatch.group(14))
     self.t =  float(particleLineMatch.group(15))
-    self.thetaz = math.atan2(self.z,(self.x**2+self.y**2)**0.5)
-    self.phiz = math.atan2(self.y,self.x)
-    self.theta = math.atan2(self.y,(self.x**2+self.z**2)**0.5)
-    self.phi = math.atan2(self.z,self.x)
+    self.thetaz = math.atan2((self.px**2+self.pz**2)**0.5,-self.py)
+    self.phiz = math.atan2(self.pz,self.px)
+    self.theta = math.atan2((self.px**2+self.py**2)**0.5,self.pz)
+    self.phi = math.atan2(self.py,self.px)
+    print self.thetaz, self.py, (self.px**2+self.pz**2)**0.5
 
   def __nonzero__(self):
     return not self.bad
@@ -44,6 +45,7 @@ class Particle(object):
       return "Particle: Invalid"
   
 def makeParticles(fname,limit=1000000000):
+  print fname
   result = []
   f = open(fname)
   
@@ -67,13 +69,15 @@ if __name__ == "__main__":
   yb = root.TH1F("yb","",100,-1000,1000)
   zb = root.TH1F("zb","",100,-1000,1000)
   thetaz = root.TH1F("thetaz","",30,0,90)
-  phiz = root.TH1F("phiz","",100,-math.pi,math.pi)
+  phiz = root.TH1F("phiz","",30,-math.pi,math.pi)
+  theta = root.TH1F("theta","",30,0,90)
+  phi = root.TH1F("phi","",30,-math.pi,math.pi)
   
   xb2 = root.TH1F("xb2","",100,-1000,1000)
   yb2 = root.TH1F("yb2","",100,-1000,1000)
   zb2 = root.TH1F("zb2","",100,-1000,1000)
   thetaz2 = root.TH1F("thetaz2","",30,0,90)
-  phiz2 = root.TH1F("phiz2","",100,-math.pi,math.pi)
+  phiz2 = root.TH1F("phiz2","",30,-math.pi,math.pi)
   xb2.SetLineColor(root.kRed-1)
   yb2.SetLineColor(root.kRed-1)
   zb2.SetLineColor(root.kRed-1)
@@ -84,7 +88,7 @@ if __name__ == "__main__":
   yb3 = root.TH1F("yb3","",100,-1000,1000)
   zb3 = root.TH1F("zb3","",100,-1000,1000)
   thetaz3 = root.TH1F("thetaz3","",30,0,90)
-  phiz3 = root.TH1F("phiz3","",100,-math.pi,math.pi)
+  phiz3 = root.TH1F("phiz3","",30,-math.pi,math.pi)
   xb3.SetLineColor(root.kBlue)
   yb3.SetLineColor(root.kBlue)
   zb3.SetLineColor(root.kBlue)
@@ -95,7 +99,7 @@ if __name__ == "__main__":
   yb4 = root.TH1F("yb4","",100,-1000,1000)
   zb4 = root.TH1F("zb4","",100,-1000,1000)
   thetaz4 = root.TH1F("thetaz4","",30,0,90)
-  phiz4 = root.TH1F("phiz4","",100,-math.pi,math.pi)
+  phiz4 = root.TH1F("phiz4","",30,-math.pi,math.pi)
   xb4.SetLineColor(root.kCyan)
   yb4.SetLineColor(root.kCyan)
   zb4.SetLineColor(root.kCyan)
@@ -108,28 +112,35 @@ if __name__ == "__main__":
   setHistTitles(thetaz,"Muon Starting zenith angle [degrees]","Events/bin")
   setHistTitles(phiz,"Muon Starting azimuthal angle with zenith [radians]","Events/bin")
   
-  particles = makeParticles("jti3/AntiMuonCutEvents_1000000.txt",100000)
-  particles2 = makeParticles("jti3/DATAte",1000)
-  particles3 = makeParticles("MillionEvents_RawData_3/AntiMuonCutEvents_1000000.txt",100000)
-  particles4 = makeParticles("hamlet.txt",100000)
+  particles = makeParticles("jti3/AntiMuonCutEvents_1000000.txt",100)
+  particles2 = makeParticles("jti3/DATAte",100)
+  particles3 = makeParticles("MillionEvents_RawData_3/AntiMuonCutEvents_1000000.txt",100)
+  particles4 = makeParticles("hamlet.txt",100)
+  print 1
   for particle in particles:
     xb.Fill(particle.x)
     yb.Fill(particle.y)
     zb.Fill(particle.z)
     thetaz.Fill(particle.thetaz*180/math.pi)
     phiz.Fill(particle.phiz)
+    theta.Fill(particle.theta*180/math.pi)
+    phi.Fill(particle.phi)
+    #print particle.thetaz, particle.px, particle.py, particle.pz
+  print 2
   for particle in particles2:
     xb2.Fill(particle.x)
     yb2.Fill(particle.y)
     zb2.Fill(particle.z)
     thetaz2.Fill(particle.thetaz*180/math.pi)
     phiz2.Fill(particle.phiz)
+  print 3
   for particle in particles3:
     xb3.Fill(particle.x)
     yb3.Fill(particle.y)
     zb3.Fill(particle.z)
     thetaz3.Fill(particle.thetaz*180/math.pi)
     phiz3.Fill(particle.phiz)
+  print 4
   for particle in particles4:
     xb4.Fill(particle.x)
     yb4.Fill(particle.y)
@@ -162,3 +173,7 @@ if __name__ == "__main__":
   phiz3.Draw("same")
   phiz4.Draw("same")
   c.SaveAs("phiz.png")
+  theta.Draw()
+  c.SaveAs("theta.png")
+  phi.Draw()
+  c.SaveAs("phi.png")
