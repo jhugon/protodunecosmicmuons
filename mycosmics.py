@@ -4,6 +4,8 @@ import math
 from scipy import *
 from scipy.integrate import dblquad
 
+MUONMASS = 0.1134289267
+
 #Double_t fluxformula(Double_t *x, Double_t *par)
 #{
 #  //x = energy of the muons, par = zenith angle
@@ -30,7 +32,7 @@ def differentialFlux(energy,costheta):
   """
     dI
   -----
-  dE d(costheta)
+    dE
 
   in units of Hz m^-2 sr^-1 GeV^-1
   """
@@ -108,7 +110,7 @@ class Muon(object):
       return "Particle: px: {} py: {} pz: {} e: {} x: {} y: {} z: {} t: {}".format(self.px,self.py,self.pz,self.e,self.x,self.y,self.z,self.t)
 
 def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
-  m = 0.1134289267
+  m = MUONMASS
   assert(emin>=m)
   energies, thetas, integralEstimate = mcInt(N,emin,emax,thetamin,thetamax)
   xs = rand(N)*(xmax-xmin) + xmin
@@ -132,76 +134,53 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
     particles.append(tmp)
   return particles, integralEstimate
 
-muons, integralEst = sample(1000,0.12,10,0.0001,90.*math.pi/180,-1,1,-1,1,-1,1)
-print integralEst
-print len(muons)
-#for muon in muons:
-#  print muon.e, muon.thetaz
+if __name__ == "__main__":
 
-from matplotlib import pyplot as mpl
-
-fig, ax = mpl.subplots()
-
-thetas = linspace(0,pi/2.)
-costhetas = cos(thetas)
-
-for energy in arange(1,11):
-  f = differentialFlux(energy,costhetas)
-  ax.plot(thetas*180/pi,f,label="%s GeV" % energy) 
-
-#ax.plot(thetas*180/pi,cos(thetas)**2,'k--')
-
-ax.legend()
-fig.savefig("test.png")
-
-fig, ax = mpl.subplots()
-
-energies = logspace(-2,1)
-for theta in linspace(0,pi/2,5):
-  f = differentialFlux(energies,cos(theta))
-  ax.plot(energies,f, label=r"$\theta$ = %s" % (theta*180./pi)) 
-ax.legend()
-fig.savefig("test2.png")
-
-import ROOT as root
-from helpers import *
-root.gROOT.SetBatch(True)
-c = root.TCanvas()
-
-thetaHist = root.TH1F("theta","",30,0,90)
-phiHist = root.TH1F("phi","",30,-180,180)
-energyHist = root.TH1F("energy","",100,0,10)
-
-setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
-setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
-setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
-
-for muon in muons:
-  thetaHist.Fill(muon.thetaz*180/math.pi)
-  phiHist.Fill(muon.phiz*180/math.pi)
-  energyHist.Fill(muon.e)
-
-thetaHist.Draw()
-c.SaveAs("thetaHist.png")
-phiHist.Draw()
-c.SaveAs("phiHist.png")
-energyHist.Draw()
-c.SaveAs("energyHist.png")
-
-thetaIntHist = getIntegralHist(thetaHist,False)
-energyIntHist = getIntegralHist(energyHist,False)
-setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Events #geq X")
-setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Events #geq X")
-
-cos2ThetaGraph = root.TGraph()
-cos2ThetaGraph.SetLineColor(root.kBlue)
-for i in range(1,thetaIntHist.GetNbinsX()):
-  tmpTheta = thetaIntHist.GetXaxis().GetBinCenter(i)
-  tmpCos2 = thetaHist.Integral()*cos(tmpTheta*math.pi/180.)**2
-  cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
-
-thetaIntHist.Draw()
-cos2ThetaGraph.Draw("l")
-c.SaveAs("thetaIntHist.png")
-energyIntHist.Draw()
-c.SaveAs("energyIntHist.png")
+  muons, integralEst = sample(1000,0.12,10,0.0001,90.*math.pi/180,-1,1,-1,1,-1,1)
+  print integralEst
+  print len(muons)
+  #for muon in muons:
+  #  print muon.e, muon.thetaz
+  
+  import ROOT as root
+  from helpers import *
+  root.gROOT.SetBatch(True)
+  c = root.TCanvas()
+  
+  thetaHist = root.TH1F("theta","",30,0,90)
+  phiHist = root.TH1F("phi","",30,-180,180)
+  energyHist = root.TH1F("energy","",100,0,10)
+  
+  setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
+  setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
+  setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
+  
+  for muon in muons:
+    thetaHist.Fill(muon.thetaz*180/math.pi)
+    phiHist.Fill(muon.phiz*180/math.pi)
+    energyHist.Fill(muon.e)
+  
+  thetaHist.Draw()
+  c.SaveAs("thetaHist.png")
+  phiHist.Draw()
+  c.SaveAs("phiHist.png")
+  energyHist.Draw()
+  c.SaveAs("energyHist.png")
+  
+  thetaIntHist = getIntegralHist(thetaHist,False)
+  energyIntHist = getIntegralHist(energyHist,False)
+  setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Events #geq X")
+  setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Events #geq X")
+  
+  cos2ThetaGraph = root.TGraph()
+  cos2ThetaGraph.SetLineColor(root.kBlue)
+  for i in range(1,thetaIntHist.GetNbinsX()):
+    tmpTheta = thetaIntHist.GetXaxis().GetBinCenter(i)
+    tmpCos2 = thetaHist.Integral()*cos(tmpTheta*math.pi/180.)**2
+    cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
+  
+  thetaIntHist.Draw()
+  cos2ThetaGraph.Draw("l")
+  c.SaveAs("thetaIntHist.png")
+  energyIntHist.Draw()
+  c.SaveAs("energyIntHist.png")
