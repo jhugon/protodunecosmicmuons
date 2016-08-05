@@ -36,6 +36,11 @@ def differentialFlux(energy,costheta):
 
   in units of Hz m^-2 sr^-1 GeV^-1
   """
+
+  assert(costheta <= 1.)
+  assert(costheta >= 0.)
+  assert(energy >= 0.)
+  
   p1 = 0.102573
   p2 = -0.068287
   p3 = 0.958633
@@ -46,6 +51,33 @@ def differentialFlux(energy,costheta):
   twopointseven = energy*(1+3.64/(energy*(costhetastar**1.29)))
   f = .140*(twopointseven**(-2.7))*((1./(1.+1.1*energy*costhetastar/115.))+0.054/(1.+1.1*energy*costhetastar/850.))
   return f
+
+class OnlineMeanVarianceCalc(object):
+  def __init__(self):
+    self.N = 0.
+    self.mean = 0.
+    self.M2 = 0.
+
+  def addPoint(self,x):
+    self.N += 1
+    delta = x - self.mean
+    self.mean += delta/self.N
+    self.M2 += delta*(x-self.mean)
+
+  def getMean(self):
+    if self.N <1:
+      return float('nan')
+    else:
+      return self.mean
+    
+  def getVariance(self):
+    if self.N < 2:
+      return float('nan')
+    else:
+      return self.M2 / (self.N - 1)
+  def getStdDev(self):
+    return math.sqrt(self.getVariance())
+
 
 #######################################3
 #
@@ -60,16 +92,19 @@ def differentialFlux(energy,costheta):
 #######################################3
 
 def mcInt(N,emin,emax,thetamin,thetamax):
-  print N,emin,emax,thetamin,thetamax
+  #print N,emin,emax,thetamin,thetamax
+  assert(emax>emin)
+  assert(thetamax>thetamin)
   costhetamin = cos(thetamin)
   costhetamax = cos(thetamax)
+  assert(costhetamax<costhetamin)
   sinthetamin = sin(thetamin)
   sinthetamax = sin(thetamax)
   totalvolume = abs(costhetamax-costhetamin)*(emax-emin)
   fmax = differentialFlux(emin,costhetamin)
 
   nAccept = 0
-  fvalSum = 0.
+  meanVarCalc = OnlineMeanVarianceCalc()
   energies = []
   thetas = []
   while nAccept < N:
@@ -79,19 +114,24 @@ def mcInt(N,emin,emax,thetamin,thetamax):
     costheta = cos(theta)
     energy = rand()*(emax-emin)+emin
     fval = differentialFlux(energy,costheta)
-    fvalSum += fval
+    meanVarCalc.addPoint(fval)
 
+    if fval >fmax:
+      raise Error("Got a larger fval than fmax for energy: %s costheta %s",energy,costheta)
     randfval = rand()*fmax
     if randfval <= fval:
       thetas.append(theta)
       energies.append(energy)
       nAccept += 1
 
-  integralEstimate = totalvolume*fvalSum/N
+  integralEstimate = totalvolume*meanVarCalc.getMean()
+  integralVariance = totalvolume**2*meanVarCalc.getVariance()/N
+  integralUnc = math.sqrt(integralVariance)
+
   energies = array(energies)
   thetas = array(thetas)
 
-  return energies, thetas, integralEstimate
+  return energies, thetas, integralEstimate, integralUnc
 
 class Muon(object):
   def __init__(self,x,y,z,t,px,py,pz,e):
@@ -123,7 +163,9 @@ class Muon(object):
 def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
   m = MUONMASS
   assert(emin>=m)
-  energies, thetas, integralEstimate = mcInt(N,emin,emax,thetamin,thetamax)
+  assert(emax>emin)
+  assert(thetamax>thetamin)
+  energies, thetas, integralEstimate, integralUnc = mcInt(N,emin,emax,thetamin,thetamax)
   xs = rand(N)*(xmax-xmin) + xmin
   ys = rand(N)*(ymax-ymin) + ymin
   zs = rand(N)*(zmax-zmin) + zmin
@@ -206,7 +248,6 @@ if __name__ == "__main__":
   c.SaveAs("thetaIntHist.png")
   energyIntHist.Draw()
   c.SaveAs("energyIntHist.png")
-
 
   with open("cosmics.txt",'w') as outfile:
     for i, muon in enumerate(muons):
