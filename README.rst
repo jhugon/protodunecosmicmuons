@@ -1,12 +1,15 @@
 protoDUNE Cosmic Ray Muons
 ==========================
 
-This repo has files for generating cosmic ray muons. The generators simply sample a parameterized distribution.
-The first ROOT script version of the software is documented in LBNE doc-db 9647, and is by Clay Barton.
+This repo has files for generating cosmic ray muons. The generators simply
+sample a parameterized distribution.  The first ROOT script version of the
+software is documented in LBNE doc-db 9647, and is by Clay Barton.
 
 SamplingProgram.C is the main script for the first version
 
-The second version is by Justin Hugon, and the main script is mycosmics.py
+The second version is by Justin Hugon, and the main script is mycosmics.py.
+mycosmics_differentialplots.py plots the differential function used in
+mycosmics.py and directly integrates it.
 
 Other references:
 -----------------

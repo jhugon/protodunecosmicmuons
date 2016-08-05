@@ -105,13 +105,20 @@ class Muon(object):
     self.y =  y
     self.z =  z
     self.t =  t
-    self.thetaz = math.atan2(self.pz,(self.px**2+self.py**2)**0.5)
-    self.phiz = math.atan2(self.py,self.px)
-    self.theta = math.atan2(self.py,(self.px**2+self.pz**2)**0.5)
-    self.phi = math.atan2(self.pz,self.px)
+    self.thetaz = math.atan2((self.px**2+self.pz**2)**0.5,-self.py)
+    self.phiz = math.atan2(self.pz,self.px)
+    self.theta = math.atan2((self.px**2+self.py**2)**0.5,self.pz)
+    self.phi = math.atan2(self.py,self.px)
 
   def __str__(self):
       return "Particle: px: {} py: {} pz: {} e: {} x: {} y: {} z: {} t: {}".format(self.px,self.py,self.pz,self.e,self.x,self.y,self.z,self.t)
+  def hepevt(self):
+    """
+    <Status> <PDG ID> <1st Mother> <2nd Mother> <1st Daughter> <2nd Daughter> <Px> <Py> <Px> <E> <Mass> <x> <y> <z> <t>
+    """
+    result = "1 -13 0 0 0 0"
+    result += " {p.px} {p.py} {p.pz} {p.e} {mass} {p.x} {p.y} {p.z} {p.t}".format(p=self,mass=MUONMASS)
+    return result
 
 def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
   m = MUONMASS
@@ -127,10 +134,10 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
   phis = rand(N)*2*math.pi - math.pi
 
-  pzs = ps*sin(thetas)
-  pxys = ps*cos(thetas)
-  pxs = pxys*cos(phis)
-  pys = pxys*sin(phis)
+  pys = ps*cos(thetas)
+  pxzs = ps*sin(thetas)
+  pxs = pxzs*cos(phis)
+  pzs = pxzs*sin(phis)
 
   particles = []
   for i in range(N):
@@ -140,8 +147,7 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
 if __name__ == "__main__":
 
-  muons, integralEst = sample(10000,0.12,10,0.000,90.*math.pi/180,-1,1,-1,1,-1,1)
-  #muons, integralEst = sample(100000,2.9999,3.111,0.000,90.*math.pi/180,-1,1,-1,1,-1,1)
+  muons, integralEst = sample(10000,MUONMASS,1000,0.000,70.*math.pi/180,-1,1,-1,1,-1,1)
   print integralEst
   print len(muons)
   #for muon in muons:
@@ -200,3 +206,11 @@ if __name__ == "__main__":
   c.SaveAs("thetaIntHist.png")
   energyIntHist.Draw()
   c.SaveAs("energyIntHist.png")
+
+
+  with open("cosmics.txt",'w') as outfile:
+    for i, muon in enumerate(muons):
+      outfile.write("{0} {1}".format(i,1))
+      outfile.write('\n')
+      outfile.write(muon.hepevt())
+      outfile.write('\n')
