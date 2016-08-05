@@ -123,3 +123,17 @@ emin=0.
 emax=100000.
 I = getTotalFlux(emin,emax,thetamin,thetamax)
 print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
+
+thetamin=cos(70.*pi/180.)
+thetamax=1.
+emin=0.
+emax=100000.
+I = getTotalFlux(emin,emax,thetamin,thetamax)
+print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
+
+thetamin=0.
+thetamax=cos(math.atan2(7.,5.9))
+emin=0.
+emax=100000.
+I = getTotalFlux(emin,emax,thetamin,thetamax)
+print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
