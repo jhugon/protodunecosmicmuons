@@ -129,21 +129,21 @@ if __name__ == "__main__":
   setHistTitles(phiz,"Muon Starting azimuthal angle with zenith [radians]","Events/bin")
   setHistTitles(energy,"Muon Starting Energy [GeV]","Events/bin")
   
-  particles = makeParticles("jti3/AntiMuonCutEvents_1000000.txt",100000)
-  particles2 = makeParticles("jti3/DATAte",0)
-  particles3 = makeParticles("MillionEvents_RawData_3/AntiMuonCutEvents_1000000.txt",0)
-  particles4 = makeParticles("hamlet.txt",100000)
-  particles5 = makeParticles("cosmics.txt",100000)
+  particles = makeParticles("hamlet.txt",100000)
+  particles2 = makeParticles("hamlet_2.txt",10000)
+  particles3 = makeParticles("hamlet_3.txt",10000)
+  particles4 = makeParticles("hamlet_4.txt",10000)
+  particles5 = makeParticles("hamlet_5.txt",10000)
   print 1
   for particle in particles:
-    xb.Fill(particle.x)
-    yb.Fill(particle.y)
-    zb.Fill(particle.z)
-    thetaz.Fill(particle.thetaz*180/math.pi)
-    phiz.Fill(particle.phiz)
-    theta.Fill(particle.theta*180/math.pi)
-    phi.Fill(particle.phi)
-    energy.Fill(particle.e)
+    xb.Fill(particle.x,0.1)
+    yb.Fill(particle.y,0.1)
+    zb.Fill(particle.z,0.1)
+    thetaz.Fill(particle.thetaz*180/math.pi,0.1)
+    phiz.Fill(particle.phiz,0.1)
+    theta.Fill(particle.theta*180/math.pi,0.1)
+    phi.Fill(particle.phi,0.1)
+    energy.Fill(particle.e,0.1)
     #print particle.thetaz, particle.px, particle.py, particle.pz
   print 2
   for particle in particles2:
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     energy4.Fill(particle.e)
   print 5
   for particle in particles5:
-    scaleFactor = 10.
+    scaleFactor = 1.
     xb5.Fill(particle.x,scaleFactor)
     yb5.Fill(particle.y,scaleFactor)
     zb5.Fill(particle.z,scaleFactor)
@@ -193,13 +193,13 @@ if __name__ == "__main__":
       leg.AddEntry(hist,label,option)
     return leg
 
-  leg = drawNormalLegend([thetaz,thetaz4,thetaz5],["Original File","SamplingProgram.C","mycosmics.py"])
+  leg = drawNormalLegend([thetaz,thetaz2,thetaz3,thetaz4,thetaz5],["E<1000GeV","E<2GeV","E<3GeV","E<4GeV","E<5GeV"])
 
   cos2Graph = root.TGraph()
   cos2Graph.SetLineStyle(2)
   Npoints = 1000
   for i in range(Npoints):
-    cos2Graph.SetPoint(i,i*90./Npoints,math.cos(i*(math.pi/2.)/Npoints)**2*7000)
+    cos2Graph.SetPoint(i,i*90./Npoints,math.cos(i*(math.pi/2.)/Npoints)**2*7000*0.1)
   
   xb.GetYaxis().SetRangeUser(0,14000)
   xb.Draw()
@@ -231,10 +231,10 @@ if __name__ == "__main__":
   c.RedrawAxis()
   c.SaveAs("zb.png")
   c.SaveAs("zb.pdf")
-  thetaz.GetYaxis().SetRangeUser(0,8000)
+  thetaz.GetYaxis().SetRangeUser(0,8000*0.1)
   thetaz.Draw()
-  #thetaz2.Draw("same")
-  #thetaz3.Draw("same")
+  thetaz2.Draw("same")
+  thetaz3.Draw("same")
   thetaz4.Draw("same")
   thetaz5.Draw("same")
   cos2Graph.Draw("l")
