@@ -1416,7 +1416,7 @@ def drawNormalLegend(hists,labels,option="l"):
   assert(len(hists)==len(labels))
   #leg = root.TLegend(0.55,0.6,0.91,0.89)
   #leg = root.TLegend(0.35,0.6,0.91,0.89)
-  leg = root.TLegend(0.40,0.7,0.91,0.89)
+  leg = root.TLegend(0.40,0.6,0.91,0.89)
   leg.SetLineColor(root.kWhite)
   for hist,label in zip(hists,labels):
     leg.AddEntry(hist,label,option)

@@ -124,7 +124,7 @@ if __name__ == "__main__":
         "scalexby": 180/math.pi,
         "title": "Muon #theta with respect to zenith [degrees]",
         "binning": [45,0.,90.],
-        "plottf1": "4700*cos(x/180*3.14159)*cos(x/180*3.14159)",
+        "plottf1": "450*cos(x/180*3.14159)*cos(x/180*3.14159)",
         "titletf1": "cos^{2}(#theta)",
         "colortf1": root.kGreen+1,
     },
@@ -146,10 +146,10 @@ if __name__ == "__main__":
         "name": "energy",
         "attr": "e",
         "title": "Muon starting energy [GeV]",
-        #"binning": [1000,0,1000],
-        "binning": [100,array.array('f',getLogBins(100,0.1,1000))],
+        "binning": [100,0,10],
+        #"binning": [100,array.array('f',getLogBins(100,0.1,1000))],
         "logy": True,
-        "logx": True,
+        #"logx": True,
     },
   ]
 
@@ -172,14 +172,14 @@ if __name__ == "__main__":
 
   for histConfig in histConfigs:
     theseHists = [ hists[histConfig['name']][fileConfig['fn']] for fileConfig in fileConfigs]
-    axisHist = makeStdAxisHist(theseHists,freeTopSpace=0.35)
+    axisHist = makeStdAxisHist(theseHists,freeTopSpace=0.45)
     if 'logx' in histConfig and histConfig['logx']:
       c.SetLogx(True)
     else:
       c.SetLogx(False)
     if 'logy' in histConfig and histConfig['logy']:
       c.SetLogy(True)
-      axisHist = makeStdAxisHist(theseHists,True,freeTopSpace=0.35)
+      axisHist = makeStdAxisHist(theseHists,True,freeTopSpace=0.45)
     else:
       c.SetLogy(False)
     setHistTitles(axisHist,histConfig['title'],"Events/bin")
@@ -210,6 +210,7 @@ if __name__ == "__main__":
     ###
     c.RedrawAxis()
     c.SaveAs(histConfig['name']+".png")
+    c.SaveAs(histConfig['name']+".pdf")
   
 #
 #  cos2Graph = root.TGraph()
