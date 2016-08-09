@@ -61,6 +61,15 @@ def makeParticles(fname,limit=1000000000):
       result.append(p)
   return result
 
+def normToBinWidth(hist):
+  xaxis = hist.GetXaxis()
+  nBins = xaxis.GetNbins()
+  for i in range(1,nBins+1):
+    binContent = hist.GetBinContent(i)
+    binWidth = hist.GetBinWidth(i)
+    hist.SetBinContent(i,binContent/binWidth)
+  return hist
+
 if __name__ == "__main__":
 
   c = root.TCanvas()
@@ -135,10 +144,11 @@ if __name__ == "__main__":
         "name": "energy",
         "attr": "e",
         "title": "Muon starting energy [GeV]",
-        #"binning": [1000,0,1000],
+        #"binning": [1000,0,100],
         "binning": [100,array.array('f',getLogBins(100,0.1,1000))],
         "logy": True,
         "logx": True,
+        "normToBinWidth":True
     },
   ]
 
@@ -161,6 +171,9 @@ if __name__ == "__main__":
 
   for histConfig in histConfigs:
     theseHists = [ hists[histConfig['name']][fileConfig['fn']] for fileConfig in fileConfigs]
+    if "normToBinWidth" in histConfig and histConfig["normToBinWidth"]:
+      for hist in theseHists:
+        normToBinWidth(hist)
     axisHist = makeStdAxisHist(theseHists,freeTopSpace=0.35)
     if 'logx' in histConfig and histConfig['logx']:
       c.SetLogx(True)
@@ -171,7 +184,11 @@ if __name__ == "__main__":
       axisHist = makeStdAxisHist(theseHists,True,freeTopSpace=0.35)
     else:
       c.SetLogy(False)
-    setHistTitles(axisHist,histConfig['title'],"Events/bin")
+    ylabel = "Events/bin"
+    xlabel = histConfig['title']
+    if "normToBinWidth" in histConfig and histConfig["normToBinWidth"]:
+      ylabel = "Events/GeV"
+    setHistTitles(axisHist,xlabel,ylabel)
     axisHist.Draw()
     for hist in theseHists:
       hist.Draw("same")
@@ -199,88 +216,5 @@ if __name__ == "__main__":
     ###
     c.RedrawAxis()
     c.SaveAs(histConfig['name']+".png")
+    c.SaveAs(histConfig['name']+".pdf")
   
-#
-#  cos2Graph = root.TGraph()
-#  cos2Graph.SetLineStyle(2)
-#  Npoints = 1000
-#  for i in range(Npoints):
-#    cos2Graph.SetPoint(i,i*90./Npoints,math.cos(i*(math.pi/2.)/Npoints)**2*7000)
-#  
-#  xb.GetYaxis().SetRangeUser(0,14000)
-#  xb.Draw()
-#  #xb2.Draw("same")
-#  #xb3.Draw("same")
-#  xb4.Draw("same")
-#  xb5.Draw("same")
-#  leg.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("xb.png")
-#  c.SaveAs("xb.pdf")
-#  yb.GetYaxis().SetRangeUser(0,2e5)
-#  yb.Draw()
-#  #yb2.Draw("same")
-#  #yb3.Draw("same")
-#  yb4.Draw("same")
-#  yb5.Draw("same")
-#  leg.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("yb.png")
-#  c.SaveAs("yb.pdf")
-#  zb.GetYaxis().SetRangeUser(0,14000)
-#  zb.Draw()
-#  #zb2.Draw("same")
-#  #zb3.Draw("same")
-#  zb4.Draw("same")
-#  zb5.Draw("same")
-#  leg.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("zb.png")
-#  c.SaveAs("zb.pdf")
-#  thetaz.GetYaxis().SetRangeUser(0,8000)
-#  thetaz.Draw()
-#  #thetaz2.Draw("same")
-#  #thetaz3.Draw("same")
-#  thetaz4.Draw("same")
-#  thetaz5.Draw("same")
-#  cos2Graph.Draw("l")
-#  leg.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("thetaz.png")
-#  c.SaveAs("thetaz.pdf")
-#  phiz.GetYaxis().SetRangeUser(0,7000)
-#  phiz.Draw()
-#  #phiz2.Draw("same")
-#  #phiz3.Draw("same")
-#  phiz4.Draw("same")
-#  phiz5.Draw("same")
-#  leg.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("phiz.png")
-#  c.SaveAs("phiz.pdf")
-#  theta.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("theta.png")
-#  c.SaveAs("theta.pdf")
-#  phi.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("phi.png")
-#  c.SaveAs("phi.pdf")
-#  c.SetLogy()
-#  c.SetLogx()
-#  energy.Draw()
-#  energy4.Draw("same")
-#  energy5.Draw("same")
-#  leg.Draw()
-#  c.RedrawAxis()
-#  c.SaveAs("energy.png")
-#  c.SaveAs("energy.pdf")
-#
-#  energy27 = energy4.Clone("energy24")
-#  for iBin in range(1,energy27.GetNbinsX()+1):
-#    x = energy27.GetBinCenter(iBin)
-#    y = energy27.GetBinContent(iBin)
-#    energy27.SetBinContent(iBin,y*x**2.7)
-#  energy27.Draw()
-#  c.SaveAs("energy27.png")
-#  c.SaveAs("energy27.pdf")
