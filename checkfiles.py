@@ -103,26 +103,33 @@ if __name__ == "__main__":
     {
         "name": "phiz",
         "attr": "phiz",
-        "title": "Muon #phi with respect to zenith [radians]",
-        "binning": [30,-math.pi,math.pi],
+        "scalexby": 180/math.pi,
+        "title": "Muon #phi with respect to zenith [degrees]",
+        "binning": [30,-90,90],
     },
     {
         "name": "thetaz",
         "attr": "thetaz",
-        "title": "Muon #theta with respect to zenith [radians]",
-        "binning": [30,0.,math.pi/2.],
+        "scalexby": 180/math.pi,
+        "title": "Muon #theta with respect to zenith [degrees]",
+        "binning": [45,0.,90.],
+        "plottf1": "4700*cos(x/180*3.14159)*cos(x/180*3.14159)",
+        "titletf1": "cos^{2}(#theta)",
+        "colortf1": root.kGreen+1,
     },
     {
         "name": "phi",
         "attr": "phi",
-        "title": "Muon #phi with respect to beam direction [radians]",
-        "binning": [30,-math.pi,math.pi],
+        "scalexby": 180/math.pi,
+        "title": "Muon #phi with respect to beam direction [degrees]",
+        "binning": [30,-90,90],
     },
     {
         "name": "theta",
         "attr": "theta",
-        "title": "Muon #theta with respect to beam direction [radians]",
-        "binning": [30,0.,math.pi],
+        "scalexby": 180/math.pi,
+        "title": "Muon #theta with respect to beam direction [degrees]",
+        "binning": [30,0.,180],
     },
     {
         "name": "energy",
@@ -147,6 +154,8 @@ if __name__ == "__main__":
     for particle in particles:
       for histConfig in histConfigs:
         x = getattr(particle,histConfig['attr'])
+        if "scalexby" in histConfig:
+          x *= histConfig["scalexby"]
         hists[histConfig['name']][fileConfig['fn']].Fill(x)
 
 
@@ -166,9 +175,26 @@ if __name__ == "__main__":
     axisHist.Draw()
     for hist in theseHists:
       hist.Draw("same")
+    ### plot tf1 time ###
+    plots = []
+    if 'plottf1' in histConfig:
+      tmpPlot = root.TF1(
+                            "plot"+str(random.randint(1000,1000000)),histConfig['plottf1'],
+                            axisHist.GetXaxis().GetBinLowEdge(1),
+                            axisHist.GetXaxis().GetBinUpEdge(axisHist.GetNbinsX())
+                        )
+      tmpPlot.SetLineStyle(2)
+      if 'colortf1' in histConfig:
+        tmpPlot.SetLineColor(histConfig["colortf1"])
+      tmpPlot.Draw('LSAME')
+      plots.append(tmpPlot)
     ### Legend time
     theseLabels = [ fileConfig['title'] for fileConfig in fileConfigs]
-    leg = drawNormalLegend(theseHists,theseLabels)
+    theseHistsForLeg = [x for x in theseHists]
+    if 'titletf1' in histConfig and len(plots)> 0:
+      theseLabels.append(histConfig['titletf1'])
+      theseHistsForLeg.append(plots[0])
+    leg = drawNormalLegend(theseHistsForLeg,theseLabels)
     leg.Draw()
     ###
     c.RedrawAxis()
