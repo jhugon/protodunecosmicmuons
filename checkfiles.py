@@ -79,22 +79,26 @@ if __name__ == "__main__":
   zb2 = root.TH1F("zb2","",100,-1000,1000)
   thetaz2 = root.TH1F("thetaz2","",30,0,90)
   phiz2 = root.TH1F("phiz2","",30,-math.pi,math.pi)
-  xb2.SetLineColor(root.kRed-1)
-  yb2.SetLineColor(root.kRed-1)
-  zb2.SetLineColor(root.kRed-1)
-  thetaz2.SetLineColor(root.kRed-1)
-  phiz2.SetLineColor(root.kRed-1)
+  energy2 = root.TH1F("energy2","",1000,0.,1000)
+  xb2.SetLineColor(root.kRed)
+  yb2.SetLineColor(root.kRed)
+  zb2.SetLineColor(root.kRed)
+  thetaz2.SetLineColor(root.kRed)
+  phiz2.SetLineColor(root.kRed)
+  energy2.SetLineColor(root.kRed)
   
   xb3 = root.TH1F("xb3","",100,-1000,1000)
   yb3 = root.TH1F("yb3","",100,-1000,1000)
   zb3 = root.TH1F("zb3","",100,-1000,1000)
   thetaz3 = root.TH1F("thetaz3","",30,0,90)
   phiz3 = root.TH1F("phiz3","",30,-math.pi,math.pi)
+  energy3 = root.TH1F("energy3","",1000,0.,1000)
   xb3.SetLineColor(root.kCyan)
   yb3.SetLineColor(root.kCyan)
   zb3.SetLineColor(root.kCyan)
   thetaz3.SetLineColor(root.kCyan)
   phiz3.SetLineColor(root.kCyan)
+  energy3.SetLineColor(root.kCyan)
   
   xb4 = root.TH1F("xb4","",100,-1000,1000)
   yb4 = root.TH1F("yb4","",100,-1000,1000)
@@ -129,7 +133,7 @@ if __name__ == "__main__":
   setHistTitles(phiz,"Muon Starting azimuthal angle with zenith [radians]","Events/bin")
   setHistTitles(energy,"Muon Starting Energy [GeV]","Events/bin")
   
-  particles = makeParticles("hamlet.txt",100000)
+  particles = makeParticles("hamlet_1.txt",10000)
   particles2 = makeParticles("hamlet_2.txt",10000)
   particles3 = makeParticles("hamlet_3.txt",10000)
   particles4 = makeParticles("hamlet_4.txt",10000)
@@ -152,6 +156,7 @@ if __name__ == "__main__":
     zb2.Fill(particle.z)
     thetaz2.Fill(particle.thetaz*180/math.pi)
     phiz2.Fill(particle.phiz)
+    energy2.Fill(particle.e,0.1)
   print 3
   for particle in particles3:
     xb3.Fill(particle.x)
@@ -159,6 +164,7 @@ if __name__ == "__main__":
     zb3.Fill(particle.z)
     thetaz3.Fill(particle.thetaz*180/math.pi)
     phiz3.Fill(particle.phiz)
+    energy3.Fill(particle.e,0.1)
   print 4
   for particle in particles4:
     xb4.Fill(particle.x)
@@ -193,7 +199,7 @@ if __name__ == "__main__":
       leg.AddEntry(hist,label,option)
     return leg
 
-  leg = drawNormalLegend([thetaz,thetaz2,thetaz3,thetaz4,thetaz5],["E<1000GeV","E<2GeV","E<3GeV","E<4GeV","E<5GeV"])
+  leg = drawNormalLegend([thetaz,thetaz2,thetaz3,thetaz4,thetaz5],["E<1GeV","E<2GeV","E<3GeV","E<4GeV","E<5GeV"])
 
   cos2Graph = root.TGraph()
   cos2Graph.SetLineStyle(2)
@@ -263,6 +269,8 @@ if __name__ == "__main__":
   c.SetLogy()
   c.SetLogx()
   energy.Draw()
+  energy2.Draw()
+  energy3.Draw()
   energy4.Draw("same")
   energy5.Draw("same")
   leg.Draw()
