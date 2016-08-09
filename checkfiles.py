@@ -64,225 +64,234 @@ def makeParticles(fname,limit=1000000000):
 if __name__ == "__main__":
 
   c = root.TCanvas()
-  
-  xb = root.TH1F("xb","",100,-1000,1000)
-  yb = root.TH1F("yb","",100,-1000,1000)
-  zb = root.TH1F("zb","",100,-1000,1000)
-  thetaz = root.TH1F("thetaz","",30,0,90)
-  phiz = root.TH1F("phiz","",30,-math.pi,math.pi)
-  theta = root.TH1F("theta","",30,0,90)
-  phi = root.TH1F("phi","",30,-math.pi,math.pi)
-  energy = root.TH1F("energy","",1000,0.,1000)
-  
-  xb2 = root.TH1F("xb2","",100,-1000,1000)
-  yb2 = root.TH1F("yb2","",100,-1000,1000)
-  zb2 = root.TH1F("zb2","",100,-1000,1000)
-  thetaz2 = root.TH1F("thetaz2","",30,0,90)
-  phiz2 = root.TH1F("phiz2","",30,-math.pi,math.pi)
-  energy2 = root.TH1F("energy2","",1000,0.,1000)
-  xb2.SetLineColor(root.kRed)
-  yb2.SetLineColor(root.kRed)
-  zb2.SetLineColor(root.kRed)
-  thetaz2.SetLineColor(root.kRed)
-  phiz2.SetLineColor(root.kRed)
-  energy2.SetLineColor(root.kRed)
-  
-  xb3 = root.TH1F("xb3","",100,-1000,1000)
-  yb3 = root.TH1F("yb3","",100,-1000,1000)
-  zb3 = root.TH1F("zb3","",100,-1000,1000)
-  thetaz3 = root.TH1F("thetaz3","",30,0,90)
-  phiz3 = root.TH1F("phiz3","",30,-math.pi,math.pi)
-  energy3 = root.TH1F("energy3","",1000,0.,1000)
-  xb3.SetLineColor(root.kCyan)
-  yb3.SetLineColor(root.kCyan)
-  zb3.SetLineColor(root.kCyan)
-  thetaz3.SetLineColor(root.kCyan)
-  phiz3.SetLineColor(root.kCyan)
-  energy3.SetLineColor(root.kCyan)
-  
-  xb4 = root.TH1F("xb4","",100,-1000,1000)
-  yb4 = root.TH1F("yb4","",100,-1000,1000)
-  zb4 = root.TH1F("zb4","",100,-1000,1000)
-  thetaz4 = root.TH1F("thetaz4","",30,0,90)
-  phiz4 = root.TH1F("phiz4","",30,-math.pi,math.pi)
-  energy4 = root.TH1F("energy4","",1000,0.,1000)
-  xb4.SetLineColor(root.kBlue)
-  yb4.SetLineColor(root.kBlue)
-  zb4.SetLineColor(root.kBlue)
-  thetaz4.SetLineColor(root.kBlue)
-  phiz4.SetLineColor(root.kBlue)
-  energy4.SetLineColor(root.kBlue)
 
-  xb5 = root.TH1F("xb5","",100,-1000,1000)
-  yb5 = root.TH1F("yb5","",100,-1000,1000)
-  zb5 = root.TH1F("zb5","",100,-1000,1000)
-  thetaz5 = root.TH1F("thetaz5","",30,0,90)
-  phiz5 = root.TH1F("phiz5","",30,-math.pi,math.pi)
-  energy5 = root.TH1F("energy5","",1000,0.,1000)
-  xb5.SetLineColor(root.kMagenta)
-  yb5.SetLineColor(root.kMagenta)
-  zb5.SetLineColor(root.kMagenta)
-  thetaz5.SetLineColor(root.kMagenta)
-  phiz5.SetLineColor(root.kMagenta)
-  energy5.SetLineColor(root.kMagenta)
+  fileConfigs = [
+    {
+        "fn": "hamlet_1.txt",
+        "title": "E < 1 GeV",
+        "color": root.kCyan,
+    },
+    {
+        "fn": "hamlet_2.txt",
+        "title": "E < 2 GeV",
+        "color": root.kMagenta,
+    },
+    {
+        "fn": "hamlet_3.txt",
+        "title": "E < 3 GeV",
+        "color": root.kRed,
+    },
+    {
+        "fn": "hamlet_4.txt",
+        "title": "E < 4 GeV",
+        "color": root.kGreen+1,
+    },
+    {
+        "fn": "hamlet_5.txt",
+        "title": "E < 5 GeV",
+        "color": root.kBlue,
+    },
+  ]
+  histConfigs = [
+    {
+        "name": "xb",
+        "attr": "x",
+        "title": "Muon starting x position [cm]",
+        "binning": [100,-1000,1000],
+    },
+    {
+        "name": "yb",
+        "attr": "y",
+        "title": "Muon starting y position [cm]",
+        "binning": [100,-1000,1000],
+    },
+    {
+        "name": "zb",
+        "attr": "z",
+        "title": "Muon starting z position [cm]",
+        "binning": [100,-1000,1000],
+    },
+    {
+        "name": "phiz",
+        "attr": "phiz",
+        "scalexby": 180/math.pi,
+        "title": "Muon #phi with respect to zenith [degrees]",
+        "binning": [30,-90,90],
+    },
+    {
+        "name": "thetaz",
+        "attr": "thetaz",
+        "scalexby": 180/math.pi,
+        "title": "Muon #theta with respect to zenith [degrees]",
+        "binning": [45,0.,90.],
+        "plottf1": "4700*cos(x/180*3.14159)*cos(x/180*3.14159)",
+        "titletf1": "cos^{2}(#theta)",
+        "colortf1": root.kGreen+1,
+    },
+    {
+        "name": "phi",
+        "attr": "phi",
+        "scalexby": 180/math.pi,
+        "title": "Muon #phi with respect to beam direction [degrees]",
+        "binning": [30,-90,90],
+    },
+    {
+        "name": "theta",
+        "attr": "theta",
+        "scalexby": 180/math.pi,
+        "title": "Muon #theta with respect to beam direction [degrees]",
+        "binning": [30,0.,180],
+    },
+    {
+        "name": "energy",
+        "attr": "e",
+        "title": "Muon starting energy [GeV]",
+        #"binning": [1000,0,1000],
+        "binning": [100,array.array('f',getLogBins(100,0.1,1000))],
+        "logy": True,
+        "logx": True,
+    },
+  ]
+
+  hists = {}
+  for histConfig in histConfigs:
+    hists[histConfig['name']] = {}
+  for fileConfig in fileConfigs:
+    for histConfig in histConfigs:
+      histArgs = [histConfig['name']+"_"+fileConfig['fn'],""] + histConfig['binning']
+      hists[histConfig['name']][fileConfig['fn']] = root.TH1F(*histArgs)
+      hists[histConfig['name']][fileConfig['fn']].SetLineColor(fileConfig['color'])
+    particles = makeParticles(fileConfig['fn'],100000)
+    for particle in particles:
+      for histConfig in histConfigs:
+        x = getattr(particle,histConfig['attr'])
+        if "scalexby" in histConfig:
+          x *= histConfig["scalexby"]
+        hists[histConfig['name']][fileConfig['fn']].Fill(x)
+
+
+  for histConfig in histConfigs:
+    theseHists = [ hists[histConfig['name']][fileConfig['fn']] for fileConfig in fileConfigs]
+    axisHist = makeStdAxisHist(theseHists,freeTopSpace=0.35)
+    if 'logx' in histConfig and histConfig['logx']:
+      c.SetLogx(True)
+    else:
+      c.SetLogx(False)
+    if 'logy' in histConfig and histConfig['logy']:
+      c.SetLogy(True)
+      axisHist = makeStdAxisHist(theseHists,True,freeTopSpace=0.35)
+    else:
+      c.SetLogy(False)
+    setHistTitles(axisHist,histConfig['title'],"Events/bin")
+    axisHist.Draw()
+    for hist in theseHists:
+      hist.Draw("same")
+    ### plot tf1 time ###
+    plots = []
+    if 'plottf1' in histConfig:
+      tmpPlot = root.TF1(
+                            "plot"+str(random.randint(1000,1000000)),histConfig['plottf1'],
+                            axisHist.GetXaxis().GetBinLowEdge(1),
+                            axisHist.GetXaxis().GetBinUpEdge(axisHist.GetNbinsX())
+                        )
+      tmpPlot.SetLineStyle(2)
+      if 'colortf1' in histConfig:
+        tmpPlot.SetLineColor(histConfig["colortf1"])
+      tmpPlot.Draw('LSAME')
+      plots.append(tmpPlot)
+    ### Legend time
+    theseLabels = [ fileConfig['title'] for fileConfig in fileConfigs]
+    theseHistsForLeg = [x for x in theseHists]
+    if 'titletf1' in histConfig and len(plots)> 0:
+      theseLabels.append(histConfig['titletf1'])
+      theseHistsForLeg.append(plots[0])
+    leg = drawNormalLegend(theseHistsForLeg,theseLabels)
+    leg.Draw()
+    ###
+    c.RedrawAxis()
+    c.SaveAs(histConfig['name']+".png")
   
-  setHistTitles(xb,"Muon Starting x position [cm]","Events/bin")
-  setHistTitles(yb,"Muon Starting y position [cm]","Events/bin")
-  setHistTitles(zb,"Muon Starting z position [cm]","Events/bin")
-  setHistTitles(thetaz,"Muon Starting zenith angle [degrees]","Events/bin")
-  setHistTitles(phiz,"Muon Starting azimuthal angle with zenith [radians]","Events/bin")
-  setHistTitles(energy,"Muon Starting Energy [GeV]","Events/bin")
-  
-  particles = makeParticles("hamlet_1.txt",10000)
-  particles2 = makeParticles("hamlet_2.txt",10000)
-  particles3 = makeParticles("hamlet_3.txt",10000)
-  particles4 = makeParticles("hamlet_4.txt",10000)
-  particles5 = makeParticles("hamlet_5.txt",10000)
-  print 1
-  for particle in particles:
-    xb.Fill(particle.x,0.1)
-    yb.Fill(particle.y,0.1)
-    zb.Fill(particle.z,0.1)
-    thetaz.Fill(particle.thetaz*180/math.pi,0.1)
-    phiz.Fill(particle.phiz,0.1)
-    theta.Fill(particle.theta*180/math.pi,0.1)
-    phi.Fill(particle.phi,0.1)
-    energy.Fill(particle.e,0.1)
-    #print particle.thetaz, particle.px, particle.py, particle.pz
-  print 2
-  for particle in particles2:
-    xb2.Fill(particle.x)
-    yb2.Fill(particle.y)
-    zb2.Fill(particle.z)
-    thetaz2.Fill(particle.thetaz*180/math.pi)
-    phiz2.Fill(particle.phiz)
-    energy2.Fill(particle.e,0.1)
-  print 3
-  for particle in particles3:
-    xb3.Fill(particle.x)
-    yb3.Fill(particle.y)
-    zb3.Fill(particle.z)
-    thetaz3.Fill(particle.thetaz*180/math.pi)
-    phiz3.Fill(particle.phiz)
-    energy3.Fill(particle.e,0.1)
-  print 4
-  for particle in particles4:
-    xb4.Fill(particle.x)
-    yb4.Fill(particle.y)
-    zb4.Fill(particle.z)
-    thetaz4.Fill(particle.thetaz*180/math.pi)
-    phiz4.Fill(particle.phiz)
-    energy4.Fill(particle.e)
-  print 5
-  for particle in particles5:
-    scaleFactor = 1.
-    xb5.Fill(particle.x,scaleFactor)
-    yb5.Fill(particle.y,scaleFactor)
-    zb5.Fill(particle.z,scaleFactor)
-    thetaz5.Fill(particle.thetaz*180/math.pi,scaleFactor)
-    phiz5.Fill(particle.phiz,scaleFactor)
-    energy5.Fill(particle.e,scaleFactor)
-    #xb5.Fill(particle.x)
-    #yb5.Fill(particle.y)
-    #zb5.Fill(particle.z)
-    #thetaz5.Fill(particle.thetaz*180/math.pi)
-    #phiz5.Fill(particle.phiz)
-    #energy5.Fill(particle.e)
-
-  def drawNormalLegend(hists,labels,option="l"):
-    assert(len(hists)==len(labels))
-    #leg = root.TLegend(0.55,0.6,0.91,0.89)
-    #leg = root.TLegend(0.35,0.6,0.91,0.89)
-    leg = root.TLegend(0.40,0.7,0.91,0.89)
-    leg.SetLineColor(root.kWhite)
-    for hist,label in zip(hists,labels):
-      leg.AddEntry(hist,label,option)
-    return leg
-
-  leg = drawNormalLegend([thetaz,thetaz2,thetaz3,thetaz4,thetaz5],["E<1GeV","E<2GeV","E<3GeV","E<4GeV","E<5GeV"])
-
-  cos2Graph = root.TGraph()
-  cos2Graph.SetLineStyle(2)
-  Npoints = 1000
-  for i in range(Npoints):
-    cos2Graph.SetPoint(i,i*90./Npoints,math.cos(i*(math.pi/2.)/Npoints)**2*7000*0.1)
-  
-  xb.GetYaxis().SetRangeUser(0,14000)
-  xb.Draw()
-  #xb2.Draw("same")
-  #xb3.Draw("same")
-  xb4.Draw("same")
-  xb5.Draw("same")
-  leg.Draw()
-  c.RedrawAxis()
-  c.SaveAs("xb.png")
-  c.SaveAs("xb.pdf")
-  yb.GetYaxis().SetRangeUser(0,2e5)
-  yb.Draw()
-  #yb2.Draw("same")
-  #yb3.Draw("same")
-  yb4.Draw("same")
-  yb5.Draw("same")
-  leg.Draw()
-  c.RedrawAxis()
-  c.SaveAs("yb.png")
-  c.SaveAs("yb.pdf")
-  zb.GetYaxis().SetRangeUser(0,14000)
-  zb.Draw()
-  #zb2.Draw("same")
-  #zb3.Draw("same")
-  zb4.Draw("same")
-  zb5.Draw("same")
-  leg.Draw()
-  c.RedrawAxis()
-  c.SaveAs("zb.png")
-  c.SaveAs("zb.pdf")
-  thetaz.GetYaxis().SetRangeUser(0,8000*0.1)
-  thetaz.Draw()
-  thetaz2.Draw("same")
-  thetaz3.Draw("same")
-  thetaz4.Draw("same")
-  thetaz5.Draw("same")
-  cos2Graph.Draw("l")
-  leg.Draw()
-  c.RedrawAxis()
-  c.SaveAs("thetaz.png")
-  c.SaveAs("thetaz.pdf")
-  phiz.GetYaxis().SetRangeUser(0,7000)
-  phiz.Draw()
-  #phiz2.Draw("same")
-  #phiz3.Draw("same")
-  phiz4.Draw("same")
-  phiz5.Draw("same")
-  leg.Draw()
-  c.RedrawAxis()
-  c.SaveAs("phiz.png")
-  c.SaveAs("phiz.pdf")
-  theta.Draw()
-  c.RedrawAxis()
-  c.SaveAs("theta.png")
-  c.SaveAs("theta.pdf")
-  phi.Draw()
-  c.RedrawAxis()
-  c.SaveAs("phi.png")
-  c.SaveAs("phi.pdf")
-  c.SetLogy()
-  c.SetLogx()
-  energy.Draw()
-  energy2.Draw()
-  energy3.Draw()
-  energy4.Draw("same")
-  energy5.Draw("same")
-  leg.Draw()
-  c.RedrawAxis()
-  c.SaveAs("energy.png")
-  c.SaveAs("energy.pdf")
-
-  energy27 = energy4.Clone("energy24")
-  for iBin in range(1,energy27.GetNbinsX()+1):
-    x = energy27.GetBinCenter(iBin)
-    y = energy27.GetBinContent(iBin)
-    energy27.SetBinContent(iBin,y*x**2.7)
-  energy27.Draw()
-  c.SaveAs("energy27.png")
-  c.SaveAs("energy27.pdf")
+#
+#  cos2Graph = root.TGraph()
+#  cos2Graph.SetLineStyle(2)
+#  Npoints = 1000
+#  for i in range(Npoints):
+#    cos2Graph.SetPoint(i,i*90./Npoints,math.cos(i*(math.pi/2.)/Npoints)**2*7000)
+#  
+#  xb.GetYaxis().SetRangeUser(0,14000)
+#  xb.Draw()
+#  #xb2.Draw("same")
+#  #xb3.Draw("same")
+#  xb4.Draw("same")
+#  xb5.Draw("same")
+#  leg.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("xb.png")
+#  c.SaveAs("xb.pdf")
+#  yb.GetYaxis().SetRangeUser(0,2e5)
+#  yb.Draw()
+#  #yb2.Draw("same")
+#  #yb3.Draw("same")
+#  yb4.Draw("same")
+#  yb5.Draw("same")
+#  leg.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("yb.png")
+#  c.SaveAs("yb.pdf")
+#  zb.GetYaxis().SetRangeUser(0,14000)
+#  zb.Draw()
+#  #zb2.Draw("same")
+#  #zb3.Draw("same")
+#  zb4.Draw("same")
+#  zb5.Draw("same")
+#  leg.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("zb.png")
+#  c.SaveAs("zb.pdf")
+#  thetaz.GetYaxis().SetRangeUser(0,8000)
+#  thetaz.Draw()
+#  #thetaz2.Draw("same")
+#  #thetaz3.Draw("same")
+#  thetaz4.Draw("same")
+#  thetaz5.Draw("same")
+#  cos2Graph.Draw("l")
+#  leg.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("thetaz.png")
+#  c.SaveAs("thetaz.pdf")
+#  phiz.GetYaxis().SetRangeUser(0,7000)
+#  phiz.Draw()
+#  #phiz2.Draw("same")
+#  #phiz3.Draw("same")
+#  phiz4.Draw("same")
+#  phiz5.Draw("same")
+#  leg.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("phiz.png")
+#  c.SaveAs("phiz.pdf")
+#  theta.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("theta.png")
+#  c.SaveAs("theta.pdf")
+#  phi.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("phi.png")
+#  c.SaveAs("phi.pdf")
+#  c.SetLogy()
+#  c.SetLogx()
+#  energy.Draw()
+#  energy4.Draw("same")
+#  energy5.Draw("same")
+#  leg.Draw()
+#  c.RedrawAxis()
+#  c.SaveAs("energy.png")
+#  c.SaveAs("energy.pdf")
+#
+#  energy27 = energy4.Clone("energy24")
+#  for iBin in range(1,energy27.GetNbinsX()+1):
+#    x = energy27.GetBinCenter(iBin)
+#    y = energy27.GetBinContent(iBin)
+#    energy27.SetBinContent(iBin,y*x**2.7)
+#  energy27.Draw()
+#  c.SaveAs("energy27.png")
+#  c.SaveAs("energy27.pdf")
