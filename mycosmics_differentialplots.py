@@ -36,7 +36,7 @@ if __name__ == "__main__":
   costhetas = cos(thetas)
   
   for energy in arange(1,11):
-    f = differentialFlux(energy,costhetas)
+    f = [differentialFlux(energy,costheta) for costheta in costhetas]
     ax.plot(thetas*180/pi,f/f[0],label="%s GeV" % energy) 
   ax.plot(thetas*180/pi,cos(thetas)**2,ls="--",label=r"cos($\theta$)^2") 
   #ax.plot(thetas[:len(thetas)/2]*180/pi,1./cos(thetas[:len(thetas)/2]),label=r"sec($\theta$)") 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
   fig, ax = mpl.subplots()
   
   for costheta in linspace(0.0,1.,5):
-    f = differentialFlux(energies,costheta)
+    f = [differentialFlux(energy,costheta) for energy in energies]
     ax.plot(energies,f,label=r"cos($\theta$) = %s" % costheta)
   
   ax.legend()
@@ -90,7 +90,7 @@ if __name__ == "__main__":
   fig, ax = mpl.subplots()
   energies = logspace(0,3)
   for thetadeg in [0.,70.]:
-    f = differentialFlux(energies,cos(thetadeg*pi/180)) * energies**2.7
+    f = [differentialFlux(energy,cos(thetadeg*pi/180)) * energies**2.7 for energy in energies]
     ax.loglog(energies,f,label=r"$\theta$ = %s deg" % thetadeg)
   ax.set_xlabel("E [GeV]")
   ax.set_ylabel("E$^{2.7}$ dI/dE [Hz cm$^{-2}$ sr$^{-1}$ GeV$^{1.7}$]")
