@@ -134,7 +134,7 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
   phis = rand(N)*2*math.pi - math.pi
 
-  pys = ps*cos(thetas)
+  pys = -ps*cos(thetas)
   pxzs = ps*sin(thetas)
   pxs = pxzs*cos(phis)
   pzs = pxzs*sin(phis)
@@ -147,66 +147,41 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
 if __name__ == "__main__":
 
-  muons, integralEst = sample(10000,MUONMASS,1000,0.000,70.*math.pi/180,-1,1,-1,1,-1,1)
-  print integralEst
-  print len(muons)
-  #for muon in muons:
-  #  print muon.e, muon.thetaz
-  
-  import ROOT as root
-  from helpers import *
-  root.gROOT.SetBatch(True)
-  c = root.TCanvas()
-  
-  thetaHist = root.TH1F("theta","",30,0,90)
-  phiHist = root.TH1F("phi","",30,-180,180)
-  energyHist = root.TH1F("energy","",100,0,10)
-  
-  setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
-  setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
-  setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
-  
-  for muon in muons:
-    thetaHist.Fill(muon.thetaz*180/math.pi)
-    phiHist.Fill(muon.phiz*180/math.pi)
-    energyHist.Fill(muon.e)
-  
-  phiHist.Draw()
-  c.SaveAs("phiHist.png")
-  energyHist.Draw()
-  c.SaveAs("energyHist.png")
+  import argparse
 
-  thetaHistIntegral = thetaHist.Integral()
+  minenergy_default = MUONMASS
+  maxenergy_default = 1000.
+  mintheta_default = 0.
+  maxtheta_default = 90.
 
-  cos2ThetaGraph = root.TGraph()
-  cos2ThetaGraph.SetLineColor(root.kBlue)
-  #funcNormalization = (thetaHistIntegral/math.pi/0.25)
-  #funcNormalization = (thetaHistIntegral/(math.pi/4.))/(thetaHist.GetNbinsX())
-  funcNormalization = thetaHist.GetBinContent(1)/cos(thetaHist.GetXaxis().GetBinCenter(1)*math.pi/180.)**2
-  print funcNormalization
-  print thetaHist.GetBinContent(1)
-  print thetaHist.GetBinContent(1)/funcNormalization
-  for i in range(1,thetaHist.GetNbinsX()):
-    tmpTheta = thetaHist.GetXaxis().GetBinCenter(i)
-    tmpCos2 = funcNormalization*cos(tmpTheta*math.pi/180.)**2
-    cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
-
-  thetaHist.Draw()
-  cos2ThetaGraph.Draw("l")
-  c.SaveAs("thetaHist.png")
-
-  #############################################
+  parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
+  parser.add_argument('outfilename',
+                      help='Output file name')
+  parser.add_argument('--nEvents','-n', type=int,
+                      required=True,
+                      help='Number of events to generate')
+  parser.add_argument('--minenergy', type=float,
+                      default=minenergy_default,
+                      help='Minimum energy [GeV], default={0}'.format(minenergy_default))
+  parser.add_argument('--maxenergy', type=float,
+                      default=maxenergy_default,
+                      help='Maximum energy [GeV], default={0}'.format(maxenergy_default))
+  parser.add_argument('--mintheta', type=float,
+                      default=mintheta_default,
+                      help='Minimum zenith angle [degrees], default={0}'.format(mintheta_default))
+  parser.add_argument('--maxtheta', type=float,
+                      default=maxtheta_default,
+                      help='Maximum zenith angle [degrees], default={0}'.format(maxtheta_default))
+  parser.add_argument('--diagnostics','-d', action="store_true",
+                      help='Make diagnostic plots')
+  parser.add_argument('--debug','-D', action="store_true",
+                      help='Print debug messages')
   
-  thetaIntHist = getIntegralHist(thetaHist,False)
-  energyIntHist = getIntegralHist(energyHist,False)
-  setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Events #geq X")
-  setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Events #geq X")
   
-  thetaIntHist.Draw()
-  c.SaveAs("thetaIntHist.png")
-  energyIntHist.Draw()
-  c.SaveAs("energyIntHist.png")
+  args = parser.parse_args()
 
+  muons, integralEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,-1,1,-1,1,-1,1)
+  print "Flux: {0} Hz".format(integralEst)
 
   with open("cosmics.txt",'w') as outfile:
     for i, muon in enumerate(muons):
@@ -214,3 +189,40 @@ if __name__ == "__main__":
       outfile.write('\n')
       outfile.write(muon.hepevt())
       outfile.write('\n')
+
+  if args.debug:
+    print len(muons)
+    for muon in muons:
+      print muon
+      print muon.e, muon.thetaz
+
+  if args.diagnostics:
+    
+    import ROOT as root
+    from helpers import *
+    root.gROOT.SetBatch(True)
+    c = root.TCanvas()
+    
+    thetaHist = root.TH1F("theta","",30,0,90)
+    phiHist = root.TH1F("phi","",30,-180,180)
+    energyHist = root.TH1F("energy","",100,0,10)
+    
+    setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
+    setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
+    setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
+    
+    for muon in muons:
+      thetaHist.Fill(muon.thetaz*180/math.pi)
+      phiHist.Fill(muon.phiz*180/math.pi)
+      energyHist.Fill(muon.e)
+    
+    phiHist.Draw()
+    c.SaveAs("phiHist.png")
+    energyHist.Draw()
+    c.SaveAs("energyHist.png")
+  
+    thetaHistIntegral = thetaHist.Integral()
+  
+    thetaHist.Draw()
+    c.SaveAs("thetaHist.png")
+  
