@@ -74,20 +74,54 @@ if __name__ == "__main__":
 
   c = root.TCanvas()
   fileConfigs = [
-    {
-        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
-        "title": "Original File",
-        "color": root.kBlack,
-    },
-    {
-        "fn": "hamlet.txt",
-        "title": "SamplingProgram.C",
-        "color": root.kBlue,
-    },
+    #{
+    #    "fn": "jti3/AntiMuonCutEvents_1000000.txt",
+    #    "title": "Original File",
+    #    "color": root.kBlack,
+    #},
+    #{
+    #    "fn": "hamlet.txt",
+    #    "title": "SamplingProgram.C",
+    #    "color": root.kBlue,
+    #},
     {
         "fn": "cosmics.txt",
         "title": "mycosmics.py",
+        "color": root.kBlack,
+    },
+    {
+        "fn": "cosmics.txt",
+        "title": "mycosmics.py, E>10 GeV",
         "color": root.kRed,
+        "cuts":[{
+                "attr":"e",
+                "op":"gt",
+                "val":10,
+                }]
+    },
+    {
+        "fn": "cosmics.txt",
+        "title": "mycosmics.py, 3 GeV <E<10 GeV",
+        "color": root.kGreen+1,
+        "cuts":[{
+                "attr":"e",
+                "op":"gt",
+                "val":3,
+                },{
+                "attr":"e",
+                "op":"lt",
+                "val":10,
+                }]
+    },
+    {
+        "fn": "cosmics.txt",
+        "title": "mycosmics.py, E<3 GeV",
+        "color": root.kBlue,
+        "cuts":[{
+                "attr":"e",
+                "op":"lt",
+                "val":3,
+                }]
     },
   ]
   histConfigs = [
@@ -152,25 +186,38 @@ if __name__ == "__main__":
     },
   ]
 
-  hists = {}
+  hists = []
   for histConfig in histConfigs:
-    hists[histConfig['name']] = {}
-  for fileConfig in fileConfigs:
-    for histConfig in histConfigs:
-      histArgs = [histConfig['name']+"_"+fileConfig['fn'],""] + histConfig['binning']
-      hists[histConfig['name']][fileConfig['fn']] = root.TH1F(*histArgs)
-      hists[histConfig['name']][fileConfig['fn']].SetLineColor(fileConfig['color'])
+    hists.append([])
+  for iFile,fileConfig in enumerate(fileConfigs):
+    for iHist,histConfig in enumerate(histConfigs):
+      histArgs = [histConfig['name']+"_"+fileConfig['fn']+str(random.randint(100,1000000)),""] + histConfig['binning']
+      hists[iHist].append(root.TH1F(*histArgs))
+      hists[iHist][iFile].SetLineColor(fileConfig['color'])
     particles = makeParticles(fileConfig['fn'],100000)
     for particle in particles:
-      for histConfig in histConfigs:
+      if "cuts" in fileConfig:
+        doContinue = False
+        for cut in fileConfig['cuts']:
+          x = getattr(particle,cut['attr'])
+          if cut['op'] == "lt":
+            if not x < cut['val']:
+              doContinue = True
+          elif cut['op'] == "gt":
+            if not x > cut['val']:
+              doContinue = True
+          else:
+            raise Exception("Opt not implemented %s",cut['op'])
+        if doContinue:
+          continue
+      for iHist,histConfig in enumerate(histConfigs):
         x = getattr(particle,histConfig['attr'])
         if "scalexby" in histConfig:
           x *= histConfig["scalexby"]
-        hists[histConfig['name']][fileConfig['fn']].Fill(x)
+        hists[iHist][iFile].Fill(x)
 
-
-  for histConfig in histConfigs:
-    theseHists = [ hists[histConfig['name']][fileConfig['fn']] for fileConfig in fileConfigs]
+  for iHist,histConfig in enumerate(histConfigs):
+    theseHists = [ hists[iHist][iFile] for iFile in range(len(fileConfigs))]
     if "normToBinWidth" in histConfig and histConfig["normToBinWidth"]:
       for hist in theseHists:
         normToBinWidth(hist)
