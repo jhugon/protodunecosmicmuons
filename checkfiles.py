@@ -79,50 +79,84 @@ if __name__ == "__main__":
     #    "title": "Original File",
     #    "color": root.kBlack,
     #},
+    {
+        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
+        "title": "Original File, E>4 GeV",
+        "color": root.kRed,
+        "cuts":[{
+                "attr":"e",
+                "op":"gt",
+                "val":5,
+                }]
+    },
+    {
+        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
+        "title": "Original File, 2 GeV < E < 4 GeV",
+        "color": root.kGreen+1,
+        "cuts":[{
+                "attr":"e",
+                "op":"gt",
+                "val":2,
+                },{
+                "attr":"e",
+                "op":"lt",
+                "val":4,
+                }]
+    },
+    {
+        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
+        "title": "Original File, E<2 GeV",
+        "color": root.kBlue,
+        "cuts":[{
+                "attr":"e",
+                "op":"lt",
+                "val":2,
+                }]
+    },
     #{
     #    "fn": "hamlet.txt",
     #    "title": "SamplingProgram.C",
     #    "color": root.kBlue,
     #},
-    {
-        "fn": "cosmics.txt",
-        "title": "mycosmics.py",
-        "color": root.kBlack,
-    },
-    {
-        "fn": "cosmics.txt",
-        "title": "mycosmics.py, E>10 GeV",
-        "color": root.kRed,
-        "cuts":[{
-                "attr":"e",
-                "op":"gt",
-                "val":10,
-                }]
-    },
-    {
-        "fn": "cosmics.txt",
-        "title": "mycosmics.py, 3 GeV <E<10 GeV",
-        "color": root.kGreen+1,
-        "cuts":[{
-                "attr":"e",
-                "op":"gt",
-                "val":3,
-                },{
-                "attr":"e",
-                "op":"lt",
-                "val":10,
-                }]
-    },
-    {
-        "fn": "cosmics.txt",
-        "title": "mycosmics.py, E<3 GeV",
-        "color": root.kBlue,
-        "cuts":[{
-                "attr":"e",
-                "op":"lt",
-                "val":3,
-                }]
-    },
+    #{
+    #    "fn": "cosmics.txt",
+    #    "title": "mycosmics.py",
+    #    "color": root.kBlack,
+    #},
+    #{
+    #    "fn": "cosmics.txt",
+    #    "title": "mycosmics.py, E>4 GeV",
+    #    "color": root.kRed,
+    #    "cuts":[{
+    #            "attr":"e",
+    #            "op":"gt",
+    #            "val":5,
+    #            }]
+    #},
+    #{
+    #    "fn": "cosmics.txt",
+    #    "title": "mycosmics.py, 2 GeV < E < 4 GeV",
+    #    "color": root.kGreen+1,
+    #    "cuts":[{
+    #            "attr":"e",
+    #            "op":"gt",
+    #            "val":2,
+    #            },{
+    #            "attr":"e",
+    #            "op":"lt",
+    #            "val":4,
+    #            }]
+    #},
+    #{
+    #    "fn": "cosmics.txt",
+    #    "title": "mycosmics.py, E<2 GeV",
+    #    "color": root.kBlue,
+    #    "cuts":[{
+    #            "attr":"e",
+    #            "op":"lt",
+    #            "val":2,
+    #            }]
+    #},
   ]
   histConfigs = [
     {
@@ -159,6 +193,17 @@ if __name__ == "__main__":
         "plottf1": "4700*cos(x/180*3.14159)*cos(x/180*3.14159)",
         "titletf1": "cos^{2}(#theta)",
         "colortf1": root.kGreen+1,
+    },
+    {
+        "name": "thetazNorm",
+        "attr": "thetaz",
+        "scalexby": 180/math.pi,
+        "title": "Muon #theta with respect to zenith [degrees]",
+        "binning": [45,0.,90.],
+        "plottf1": "0.05*cos(x/180*3.14159)*cos(x/180*3.14159)",
+        "titletf1": "cos^{2}(#theta)",
+        "colortf1": root.kGreen+1,
+        "normalize": True
     },
     {
         "name": "phi",
@@ -221,6 +266,9 @@ if __name__ == "__main__":
     if "normToBinWidth" in histConfig and histConfig["normToBinWidth"]:
       for hist in theseHists:
         normToBinWidth(hist)
+    elif "normalize" in histConfig and histConfig["normalize"]:
+      for hist in theseHists:
+        normalizeHist(hist)
     axisHist = makeStdAxisHist(theseHists,freeTopSpace=0.35)
     if 'logx' in histConfig and histConfig['logx']:
       c.SetLogx(True)
@@ -235,6 +283,8 @@ if __name__ == "__main__":
     xlabel = histConfig['title']
     if "normToBinWidth" in histConfig and histConfig["normToBinWidth"]:
       ylabel = "Events/GeV"
+    elif "normalize" in histConfig and histConfig["normalize"]:
+      ylabel = "Normalized Events/bin"
     setHistTitles(axisHist,xlabel,ylabel)
     axisHist.Draw()
     for hist in theseHists:
