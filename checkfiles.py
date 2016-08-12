@@ -29,6 +29,11 @@ if __name__ == "__main__":
         "title": "testcosmics.root",
         "color": root.kRed,
     },
+    {
+        "fn": "testcosmicsIntThetaToo.root",
+        "title": "testcosmicsIntThetaToo.root",
+        "color": root.kBlue,
+    },
     #{
     #    "fn": "jti3/AntiMuonCutEvents_1000000.root",
     #    "title": "Original File",
@@ -118,7 +123,7 @@ if __name__ == "__main__":
         "title": "Muon #theta with respect to zenith [degrees]",
         "cuts" : "1./sin(thetaz)",
         "binning": [45,0.,90.],
-        "plottf1": "1000*cos(x/180*pi)*cos(x/180*pi)",
+        "plottf1": "80*cos(x/180*pi)*cos(x/180*pi)",
         "titletf1": "cos^{2}(#theta)",
         "colortf1": root.kGreen+1,
     },
