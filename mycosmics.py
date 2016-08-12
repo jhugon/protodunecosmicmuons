@@ -65,24 +65,28 @@ def mcInt(N,emin,emax,thetamin,thetamax):
   costhetamax = cos(thetamax)
   sinthetamin = sin(thetamin)
   sinthetamax = sin(thetamax)
+  if costhetamax < costhetamin:
+    tmp = costhetamax
+    costhetamax = costhetamin
+    costhetamin = tmp
   totalvolume = abs(costhetamax-costhetamin)*(emax-emin)
-  fmax = differentialFlux(emin,costhetamin)
+  fmax = max(differentialFlux(emin,costhetamin),differentialFlux(emin,costhetamax))
 
   nAccept = 0
   fvalSum = 0.
   energies = []
   thetas = []
   while nAccept < N:
-    #costheta = rand()*(costhetamax-costhetamin)+costhetamin
-    sintheta = rand()*(sinthetamax-sinthetamin)+sinthetamin
-    theta = math.asin(sintheta)
-    costheta = cos(theta)
+    #theta = rand()*(thetamax-thetamin)+thetamin
+    #costheta = cos(theta)
+    costheta = rand()*(costhetamax-costhetamin)+costhetamin
     energy = rand()*(emax-emin)+emin
     fval = differentialFlux(energy,costheta)
     fvalSum += fval
 
     randfval = rand()*fmax
     if randfval <= fval:
+      theta = math.acos(costheta)
       thetas.append(theta)
       energies.append(energy)
       nAccept += 1
@@ -207,8 +211,8 @@ if __name__ == "__main__":
     from helpers import *
     root.gROOT.SetBatch(True)
     c = root.TCanvas()
-    
-    thetaHist = root.TH1F("theta","",30,0,90)
+
+    thetaHist = root.TH1F("theta","",10,0,90)
     phiHist = root.TH1F("phi","",30,-180,180)
     energyHist = root.TH1F("energy","",100,0,10)
     
@@ -223,13 +227,16 @@ if __name__ == "__main__":
     
     phiHist.Draw()
     c.SaveAs("phiHist.png")
+    c.SaveAs("phiHist.pdf")
     energyHist.Draw()
     c.SaveAs("energyHist.png")
+    c.SaveAs("energyHist.pdf")
   
     thetaHistIntegral = thetaHist.Integral()
   
     thetaHist.Draw()
     c.SaveAs("thetaHist.png")
+    c.SaveAs("thetaHist.pdf")
 
   if args.roottree:
     from makeRootTree import makeRootTree
