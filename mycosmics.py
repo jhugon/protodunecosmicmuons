@@ -60,7 +60,7 @@ def differentialFlux(energy,costheta):
 #######################################3
 
 def mcInt(N,emin,emax,thetamin,thetamax):
-  print N,emin,emax,thetamin,thetamax
+  #print N,emin,emax,thetamin,thetamax
   costhetamin = cos(thetamin)
   costhetamax = cos(thetamax)
   sinthetamin = sin(thetamin)
@@ -176,14 +176,19 @@ if __name__ == "__main__":
                       help='Make diagnostic plots')
   parser.add_argument('--debug','-D', action="store_true",
                       help='Print debug messages')
+  parser.add_argument('--roottree','-R', action="store_true",
+                      help='Make ROOT Tree')
   
   
   args = parser.parse_args()
 
+  print "N events: {0}".format(args.nEvents)
+  print "Energy range: {0:.3f}-{1:.3f} GeV".format(args.minenergy,args.maxenergy)
+  print "Theta range: {0:.3f}-{1:.3f} degrees".format(args.mintheta,args.maxtheta)
   muons, integralEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,-1,1,-1,1,-1,1)
-  print "Flux: {0} Hz".format(integralEst)
-
-  with open("cosmics.txt",'w') as outfile:
+  print "Flux: {0:.3g} Hz".format(integralEst)
+  print "Outputing HEPEVT file '{0}'".format(args.outfilename)
+  with open(args.outfilename,'w') as outfile:
     for i, muon in enumerate(muons):
       outfile.write("{0} {1}".format(i,1))
       outfile.write('\n')
@@ -225,4 +230,10 @@ if __name__ == "__main__":
   
     thetaHist.Draw()
     c.SaveAs("thetaHist.png")
-  
+
+  if args.roottree:
+    from makeRootTree import makeRootTree
+    import os.path
+    outfileNameRoot = os.path.splitext(args.outfilename)[0] + ".root"
+    print "Outputing ROOT file '{0}' with tree name 'tree'".format(outfileNameRoot)
+    makeRootTree(args.outfilename,outfileNameRoot,-1,False)
