@@ -7,59 +7,9 @@ import ROOT as root
 from helpers import *
 root.gROOT.SetBatch(True)
 
-class Particle(object):
-  def __init__(self,line,iEvent=None):
-    self.bad = False
-    reIntParts = r"([0-9-]+)\s+"*6
-    reFloatParts = r"([0-9.-]+)\s+"*9
-    reParticleLine = r"^"+reIntParts+reFloatParts[:-3]+r"$"
-    particleLineMatch = re.match(reParticleLine,line)
-    if not particleLineMatch:
-      self.bad = True
-      return
-    self.status = int(particleLineMatch.group(1))
-    self.pdgid = int(particleLineMatch.group(2))
-    self.px = float(particleLineMatch.group(7))
-    self.py = -abs(float(particleLineMatch.group(8)))
-    self.pz = float(particleLineMatch.group(9))
-    self.p = math.sqrt(self.px**2+self.py**2+self.pz**2)
-    self.e =  float(particleLineMatch.group(10))
-    self.m =  float(particleLineMatch.group(11))
-    self.x =  float(particleLineMatch.group(12))
-    self.y =  float(particleLineMatch.group(13))
-    self.z =  float(particleLineMatch.group(14))
-    self.t =  float(particleLineMatch.group(15))
-    self.thetaz = math.atan2((self.px**2+self.pz**2)**0.5,-self.py)
-    self.phiz = math.atan2(self.pz,self.px)
-    self.theta = math.atan2((self.px**2+self.py**2)**0.5,self.pz)
-    self.phi = math.atan2(self.py,self.px)
-    #print self.thetaz, self.py, (self.px**2+self.pz**2)**0.5
-
-  def __nonzero__(self):
-    return not self.bad
-
-  def __str__(self):
-    if self:
-      return "Particle: status: {} pdgid: {} px: {} py: {} pz: {} e: {} x: {} y: {} z: {} t: {}".format(self.status,self.pdgid,self.px,self.py,self.pz,self.e,self.x,self.y,self.z,self.t)
-    else:
-      return "Particle: Invalid"
-  
-def makeParticles(fname,limit=1000000000):
-  print fname
-  result = []
-  f = open(fname)
-  
-  iEvent = None
-  for iLine, line in enumerate(f):
-    if iLine > limit*2:
-      break
-    eventLineMatch = re.match(r"^([0-9]+)\s+[0-9]+$",line)
-    if eventLineMatch:
-      iEvent = int(eventLineMatch.group(1))
-    p = Particle(line,iEvent)
-    if p:
-      result.append(p)
-  return result
+from rootpy.plotting import Hist, Hist2D, Canvas, Graph
+from rootpy.tree import Tree
+from rootpy.io import root_open
 
 def normToBinWidth(hist):
   xaxis = hist.GetXaxis()
@@ -74,120 +24,91 @@ if __name__ == "__main__":
 
   c = root.TCanvas()
   fileConfigs = [
+    {
+        "fn": "testcosmics.root",
+        "title": "testcosmics.root",
+        "color": root.kRed,
+    },
     #{
-    #    "fn": "jti3/AntiMuonCutEvents_1000000.txt",
+    #    "fn": "jti3/AntiMuonCutEvents_1000000.root",
     #    "title": "Original File",
     #    "color": root.kBlack,
     #},
-    {
-        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
-        "title": "Original File, E>4 GeV",
-        "color": root.kRed,
-        "cuts":[{
-                "attr":"e",
-                "op":"gt",
-                "val":5,
-                }]
-    },
-    {
-        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
-        "title": "Original File, 2 GeV < E < 4 GeV",
-        "color": root.kGreen+1,
-        "cuts":[{
-                "attr":"e",
-                "op":"gt",
-                "val":2,
-                },{
-                "attr":"e",
-                "op":"lt",
-                "val":4,
-                }]
-    },
-    {
-        "fn": "jti3/AntiMuonCutEvents_1000000.txt",
-        "title": "Original File, E<2 GeV",
-        "color": root.kBlue,
-        "cuts":[{
-                "attr":"e",
-                "op":"lt",
-                "val":2,
-                }]
-    },
     #{
-    #    "fn": "hamlet.txt",
+    #    "fn": "jti3/AntiMuonCutEvents_1000000.root",
+    #    "title": "Original File, E>4 GeV",
+    #    "color": root.kRed,
+    #    "cuts": "E > 5",
+    #},
+    #{
+    #    "fn": "jti3/AntiMuonCutEvents_1000000.root",
+    #    "title": "Original File, 2 GeV < E < 4 GeV",
+    #    "color": root.kGreen+1,
+    #    "cuts": "E > 2 && e < 4", 
+    #},
+    #{
+    #    "fn": "jti3/AntiMuonCutEvents_1000000.root",
+    #    "title": "Original File, E<2 GeV",
+    #    "color": root.kBlue,
+    #    "cuts": "E < 2",
+    #},
+    #{
+    #    "fn": "hamlet.root",
     #    "title": "SamplingProgram.C",
     #    "color": root.kBlue,
     #},
     #{
-    #    "fn": "cosmics.txt",
+    #    "fn": "cosmics.root",
     #    "title": "mycosmics.py",
-    #    "color": root.kBlack,
+    #    "color": root.kRed,
     #},
     #{
-    #    "fn": "cosmics.txt",
+    #    "fn": "cosmics.root",
     #    "title": "mycosmics.py, E>4 GeV",
     #    "color": root.kRed,
-    #    "cuts":[{
-    #            "attr":"e",
-    #            "op":"gt",
-    #            "val":5,
-    #            }]
+    #    "cuts": "E > 5",
     #},
     #{
-    #    "fn": "cosmics.txt",
+    #    "fn": "cosmics.root",
     #    "title": "mycosmics.py, 2 GeV < E < 4 GeV",
     #    "color": root.kGreen+1,
-    #    "cuts":[{
-    #            "attr":"e",
-    #            "op":"gt",
-    #            "val":2,
-    #            },{
-    #            "attr":"e",
-    #            "op":"lt",
-    #            "val":4,
-    #            }]
+    #    "cuts": "E > 2 && e < 4", 
     #},
     #{
-    #    "fn": "cosmics.txt",
+    #    "fn": "cosmics.root",
     #    "title": "mycosmics.py, E<2 GeV",
     #    "color": root.kBlue,
-    #    "cuts":[{
-    #            "attr":"e",
-    #            "op":"lt",
-    #            "val":2,
-    #            }]
+    #    "cuts": "E < 2",
     #},
   ]
   histConfigs = [
     {
         "name": "xb",
-        "attr": "x",
+        "var": "x",
         "title": "Muon starting x position [cm]",
         "binning": [100,-1000,1000],
     },
     {
         "name": "yb",
-        "attr": "y",
+        "var": "y",
         "title": "Muon starting y position [cm]",
         "binning": [100,-1000,1000],
     },
     {
         "name": "zb",
-        "attr": "z",
+        "var": "z",
         "title": "Muon starting z position [cm]",
         "binning": [100,-1000,1000],
     },
     {
         "name": "phiz",
-        "attr": "phiz",
-        "scalexby": 180/math.pi,
+        "var": "phiz*180/pi",
         "title": "Muon #phi with respect to zenith [degrees]",
         "binning": [30,-90,90],
     },
     {
         "name": "thetaz",
-        "attr": "thetaz",
-        "scalexby": 180/math.pi,
+        "var": "thetaz*180/pi",
         "title": "Muon #theta with respect to zenith [degrees]",
         "binning": [45,0.,90.],
         "plottf1": "4700*cos(x/180*3.14159)*cos(x/180*3.14159)",
@@ -196,8 +117,7 @@ if __name__ == "__main__":
     },
     {
         "name": "thetazNorm",
-        "attr": "thetaz",
-        "scalexby": 180/math.pi,
+        "var": "thetaz*180/pi",
         "title": "Muon #theta with respect to zenith [degrees]",
         "binning": [45,0.,90.],
         "plottf1": "0.05*cos(x/180*3.14159)*cos(x/180*3.14159)",
@@ -207,24 +127,22 @@ if __name__ == "__main__":
     },
     {
         "name": "phi",
-        "attr": "phi",
-        "scalexby": 180/math.pi,
+        "var": "phi*180/pi",
         "title": "Muon #phi with respect to beam direction [degrees]",
         "binning": [30,-90,90],
     },
     {
         "name": "theta",
-        "attr": "theta",
-        "scalexby": 180/math.pi,
+        "var": "theta*180/pi",
         "title": "Muon #theta with respect to beam direction [degrees]",
         "binning": [30,0.,180],
     },
     {
         "name": "energy",
-        "attr": "e",
+        "var": "E",
         "title": "Muon starting energy [GeV]",
         #"binning": [1000,0,100],
-        "binning": [100,array.array('f',getLogBins(100,0.1,1000))],
+        "binning": getLogBins(100,0.1,1000),
         "logy": True,
         "logx": True,
         "normToBinWidth":True
@@ -236,30 +154,24 @@ if __name__ == "__main__":
     hists.append([])
   for iFile,fileConfig in enumerate(fileConfigs):
     for iHist,histConfig in enumerate(histConfigs):
-      histArgs = [histConfig['name']+"_"+fileConfig['fn']+str(random.randint(100,1000000)),""] + histConfig['binning']
-      hists[iHist].append(root.TH1F(*histArgs))
-      hists[iHist][iFile].SetLineColor(fileConfig['color'])
-    particles = makeParticles(fileConfig['fn'],100000)
-    for particle in particles:
-      if "cuts" in fileConfig:
-        doContinue = False
-        for cut in fileConfig['cuts']:
-          x = getattr(particle,cut['attr'])
-          if cut['op'] == "lt":
-            if not x < cut['val']:
-              doContinue = True
-          elif cut['op'] == "gt":
-            if not x > cut['val']:
-              doContinue = True
-          else:
-            raise Exception("Opt not implemented %s",cut['op'])
-        if doContinue:
-          continue
+      histArgs = histConfig['binning']
+      hist = None
+      if len(histArgs) == 3:
+        hist = Hist(*histArgs)
+      else:
+        hist = Hist(histArgs)
+      hist.UseCurrentStyle()
+      hist.SetLineColor(fileConfig['color'])
+      hist.SetMarkerStyle(0)
+      hists[iHist].append(hist)
+    with root_open(fileConfig['fn']) as infile:
+      tree = infile.Get("tree")
       for iHist,histConfig in enumerate(histConfigs):
-        x = getattr(particle,histConfig['attr'])
-        if "scalexby" in histConfig:
-          x *= histConfig["scalexby"]
-        hists[iHist][iFile].Fill(x)
+        var = histConfig['var']
+        cuts = ""
+        if "cuts" in histConfig:
+          cuts = histConfig['cuts']
+        tree.Draw(var,selection=cuts,hist=hists[iHist][iFile])
 
   for iHist,histConfig in enumerate(histConfigs):
     theseHists = [ hists[iHist][iFile] for iFile in range(len(fileConfigs))]
@@ -286,9 +198,9 @@ if __name__ == "__main__":
     elif "normalize" in histConfig and histConfig["normalize"]:
       ylabel = "Normalized Events/bin"
     setHistTitles(axisHist,xlabel,ylabel)
-    axisHist.Draw()
+    axisHist.Draw("")
     for hist in theseHists:
-      hist.Draw("same")
+      hist.Draw("histsame")
     ### plot tf1 time ###
     plots = []
     if 'plottf1' in histConfig:
