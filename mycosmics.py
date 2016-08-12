@@ -2,6 +2,7 @@
 
 import math
 from scipy import *
+from scipy.optimize import minimize_scalar
 from scipy.integrate import dblquad
 
 MUONMASS = 0.1134289267
@@ -45,6 +46,7 @@ def differentialFlux(energy,costheta):
   costhetastar = sqrt((costheta**2+p1**2+p2*(costheta**p3)+p4*(costheta**p5))/(1.+p1**2+p2+p4))
   twopointseven = energy*(1+3.64/(energy*(costhetastar**1.29)))
   f = .140*(twopointseven**(-2.7))*((1./(1.+1.1*energy*costhetastar/115.))+0.054/(1.+1.1*energy*costhetastar/850.))
+  f *= sin(math.acos(costheta))*2*pi # makes it integrate over solid angle, too
   return f
 
 #######################################3
@@ -70,16 +72,20 @@ def mcInt(N,emin,emax,thetamin,thetamax):
     costhetamax = costhetamin
     costhetamin = tmp
   totalvolume = abs(costhetamax-costhetamin)*(emax-emin)
-  fmax = max(differentialFlux(emin,costhetamin),differentialFlux(emin,costhetamax))
+
+  minimizeResult = minimize_scalar(lambda x: -differentialFlux(emin,x),abs(costhetamin-costhetamax)*0.5,bounds=[costhetamin,costhetamax],method="Bounded")
+  if not minimizeResult.success:
+    raise Exception("Could not find differentialFlux maximum: %s",minimizeResult.message)
+  fmax = differentialFlux(emin,minimizeResult.x)
 
   nAccept = 0
   fvalSum = 0.
   energies = []
   thetas = []
   while nAccept < N:
-    #theta = rand()*(thetamax-thetamin)+thetamin
-    #costheta = cos(theta)
-    costheta = rand()*(costhetamax-costhetamin)+costhetamin
+    theta = rand()*(thetamax-thetamin)+thetamin
+    costheta = cos(theta)
+    #costheta = rand()*(costhetamax-costhetamin)+costhetamin
     energy = rand()*(emax-emin)+emin
     fval = differentialFlux(energy,costheta)
     fvalSum += fval
