@@ -1,19 +1,11 @@
 protoDUNE Cosmic Ray Muons
 ==========================
 
-This repo has files for generating cosmic ray muons. The generators simply
-sample a parameterized distribution. Events our output in HEPEVT text format.
+This repo has files for generating cosmic ray muons. The generator simply
+uses accept/reject sampling. Events are output in HEPEVT text format.
 The first ROOT script version of the software is documented in LBNE doc-db
-9647, and is by Clay Barton.
-
-SamplingProgram.C is the main script for the first version. As far as I can
-tell, it samples theta from cos(theta)^2 and then samples from the E
-distribution.
-
-The second version is by Justin Hugon, and the main script is mycosmics.py.
-mycosmics.py samples from the 2D distribution w.r.t. theta and E.
-mycosmics_differentialplots.py plots the differential function used in
-mycosmics.py and directly integrates it. 
+9647, and is by Clay Barton. The second version is by Justin Hugon, and the
+main script is mycosmics.py.
 
 There is also a converter from HEPEVT to ROOT tree format program:
 makeRootTree.py.  It requires the rootpy python package.
