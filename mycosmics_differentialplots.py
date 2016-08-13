@@ -12,13 +12,16 @@ def dIdE_only(energy,costhetaMin,costhetaMax):
   return result
 
 def dIdtheta_only(costheta,eMin,eMax):
+  """
+  In units of Hz cm^-2 sr^-1
+  """
   assert(eMin<eMax)
   result, uncertainty = quad(lambda x: differentialFlux(x,costheta),eMin,eMax)
   return result
 
 def getTotalFlux(eMin,eMax,costhetamin,costhetamax):
   """
-  In units of Hz cm^-2 sr^-1
+  In units of Hz cm^-2
   """
   assert(costhetamin<costhetamax)
 

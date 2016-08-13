@@ -30,9 +30,9 @@ MUONMASS = 0.1134289267
 
 def differentialFlux(energy,costheta):
   """
-    dI
-  -----
-    dE
+        dI
+  ---------------
+   dE dcostheta
 
   in units of Hz cm^-2 sr^-1 GeV^-1
   """
@@ -60,6 +60,16 @@ def differentialFlux(energy,costheta):
 #######################################3
 
 def mcInt(N,emin,emax,thetamin,thetamax):
+  """
+  args:
+    N: n events to generate
+    emin, emax: muon energy bounds in GeV
+    thetamin,thetamax: azimuthal angle bounds in rad
+  returns:
+    muon energies in GeV (ndarray)
+    muon thetas in rad (ndarray)
+    integral flux estimate in Hz cm^-2
+  """
   #print N,emin,emax,thetamin,thetamax
   costhetamin = cos(thetamin)
   costhetamax = cos(thetamax)
@@ -73,6 +83,7 @@ def mcInt(N,emin,emax,thetamin,thetamax):
   fmax = max(differentialFlux(emin,costhetamin),differentialFlux(emin,costhetamax))
 
   nAccept = 0
+  nTried = 0
   fvalSum = 0.
   energies = []
   thetas = []
@@ -83,6 +94,7 @@ def mcInt(N,emin,emax,thetamin,thetamax):
     energy = rand()*(emax-emin)+emin
     fval = differentialFlux(energy,costheta)
     fvalSum += fval
+    nTried += 1
 
     randfval = rand()*fmax
     if randfval <= fval:
@@ -91,7 +103,8 @@ def mcInt(N,emin,emax,thetamin,thetamax):
       energies.append(energy)
       nAccept += 1
 
-  integralEstimate = totalvolume*fvalSum/N
+  integralEstimate = totalvolume*fvalSum/nTried
+  integralEstimate *= 2*pi # integrate over phi
   energies = array(energies)
   thetas = array(thetas)
 
@@ -124,12 +137,26 @@ class Muon(object):
     result += " {p.px} {p.py} {p.pz} {p.e} {mass} {p.x} {p.y} {p.z} {p.t}".format(p=self,mass=MUONMASS)
     return result
 
-def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
+def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,y,zmin,zmax):
+  """
+  args:
+    N: n events to generate
+    emin, emax: muon energy bounds in GeV
+    thetamin,thetamax: azimuthal angle bounds in rad
+    xmin,xmax: min and max x positions in cm
+    y: y position in cm (up)
+    zmin,zmax: min and max z positions in cm
+  returns:
+    muons: list of muon objects
+    rateEstimate: rate estimate in Hz
+  """
   m = MUONMASS
   assert(emin>=m)
   energies, thetas, integralEstimate = mcInt(N,emin,emax,thetamin,thetamax)
+  print ("Flux: {0:.3f} Hz cm^-2".format(integralEstimate))
+  rateEstimate = integralEstimate*(xmax-xmin)*(zmax-zmin)
   xs = rand(N)*(xmax-xmin) + xmin
-  ys = rand(N)*(ymax-ymin) + ymin
+  ys = ones(N)*y
   zs = rand(N)*(zmax-zmin) + zmin
   ts = zeros(N)
 
@@ -147,7 +174,7 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
   for i in range(N):
     tmp = Muon(xs[i],ys[i],zs[i],ts[i],pxs[i],pys[i],pzs[i],energies[i])
     particles.append(tmp)
-  return particles, integralEstimate
+  return particles, rateEstimate
 
 if __name__ == "__main__":
 
@@ -157,6 +184,11 @@ if __name__ == "__main__":
   maxenergy_default = 1000.
   mintheta_default = 0.
   maxtheta_default = 90.
+  minx_default = -3.6-1.8
+  maxx_default = 3.6+1.8
+  minz_default = -0.5-1200.
+  maxz_default = 695+1200.
+  y_default = 607.5
 
   parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
   parser.add_argument('outfilename',
@@ -176,6 +208,21 @@ if __name__ == "__main__":
   parser.add_argument('--maxtheta', type=float,
                       default=maxtheta_default,
                       help='Maximum zenith angle [degrees], default={0}'.format(maxtheta_default))
+  parser.add_argument('--minx', type=float,
+                      default=minx_default,
+                      help='Minimum intial x coordinate [cm], default={0}'.format(minx_default))
+  parser.add_argument('--maxx', type=float,
+                      default=minx_default,
+                      help='Maximum intial x coordinate [cm], default={0}'.format(maxx_default))
+  parser.add_argument('--minz', type=float,
+                      default=minz_default,
+                      help='Minimum intial z coordinate [cm], default={0}'.format(minz_default))
+  parser.add_argument('--maxz', type=float,
+                      default=minz_default,
+                      help='Maximum intial z coordinate [cm], default={0}'.format(maxz_default))
+  parser.add_argument('-y', type=float,
+                      default=y_default,
+                      help='Intial y coordinate [cm], default={0}'.format(y_default))
   parser.add_argument('--diagnostics','-d', action="store_true",
                       help='Make diagnostic plots')
   parser.add_argument('--debug','-D', action="store_true",
@@ -186,11 +233,14 @@ if __name__ == "__main__":
   
   args = parser.parse_args()
 
-  print "N events: {0}".format(args.nEvents)
-  print "Energy range: {0:.3f}-{1:.3f} GeV".format(args.minenergy,args.maxenergy)
-  print "Theta range: {0:.3f}-{1:.3f} degrees".format(args.mintheta,args.maxtheta)
-  muons, integralEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,-1,1,-1,1,-1,1)
-  print "Flux: {0:.3g} Hz".format(integralEst)
+  print "N events:     {0:9}".format(args.nEvents)
+  print "Energy range: {0:9.3f} to {1:9.3f} GeV".format(args.minenergy,args.maxenergy)
+  print "Theta range:  {0:9.2f} to {1:9.2f} degrees".format(args.mintheta,args.maxtheta)
+  print "x range:      {0:9.2f} to {1:9.2f} cm".format(args.minx,args.maxx)
+  print "y:            {0:9.2f} cm".format(args.y)
+  print "z range:      {0:9.2f} to {1:9.2f} cm".format(args.minz,args.maxz)
+  muons, rateEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,args.minx,args.maxx,args.y,args.minz,args.maxz)
+  print "Rate: {0:.3g} Hz".format(rateEst)
   print "Outputing HEPEVT file '{0}'".format(args.outfilename)
   with open(args.outfilename,'w') as outfile:
     for i, muon in enumerate(muons):
