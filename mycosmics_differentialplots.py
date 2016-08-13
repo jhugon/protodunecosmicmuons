@@ -18,13 +18,13 @@ def dIdtheta_only(costheta,eMin,eMax):
 
 def getTotalFlux(eMin,eMax,costhetamin,costhetamax):
   """
-  In units of Hz cm^-2
+  In units of Hz cm^-2 sr^-1
   """
   assert(costhetamin<costhetamax)
 
   # y,x -> energy, costheta
   result, uncertainty = dblquad(differentialFlux,costhetamin,costhetamax,lambda x: eMin, lambda x: eMax)
-
+  result *= 2*pi
   return result
 
 if __name__ == "__main__":
@@ -32,7 +32,6 @@ if __name__ == "__main__":
   fig, ax = mpl.subplots()
   
   thetas = linspace(0,pi/2.)
-  energies = linspace(MUONMASS,10)
   costhetas = cos(thetas)
   
   for energy in arange(1,11):
@@ -44,14 +43,22 @@ if __name__ == "__main__":
   ax.set_xlabel(r"$\theta$ [deg]")
   ax.set_ylabel(r"dI/(d$\theta$ dE) [Hz cm$^{-2}$ sr$^{-1}$ GeV$^{-1}$]")
   fig.savefig("dIdtheta_multiE.png")
+
+  ###########################################################
   
+  energies = logspace(0,4)
   fig, ax = mpl.subplots()
   
-  for costheta in linspace(0.0,1.,5):
+  for thetaDeg in [0,56,75]:
+    costheta = math.cos(thetaDeg*pi/180)
     f = [differentialFlux(energy,costheta) for energy in energies]
-    ax.plot(energies,f,label=r"cos($\theta$) = %s" % costheta)
+    f = array(f)
+    f *= energies**2.7
+    ax.loglog(energies,f,label=r"$\theta$ = %s deg" % thetaDeg)
   
   ax.legend()
+  ax.set_xlim(7,7000)
+  ax.set_ylim(0.003,0.2)
   ax.set_xlabel(r"E [GeV]")
   ax.set_ylabel(r"dI/(d$\theta$ dE) [Hz cm$^{-2}$ sr$^{-1}$ GeV$^{-1}$]")
   fig.savefig("dIdE_multiTheta.png")
@@ -103,42 +110,14 @@ if __name__ == "__main__":
   
   thetamin=0.0
   thetamax=1.
-  emin=MUONMASS
-  emax=10000.
-  I = getTotalFlux(emin,emax,thetamin,thetamax)
-  print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
-  
-  thetamin=0.0
-  thetamax=1.
-  emin=MUONMASS
+  emin=0.
   emax=1000.
   I = getTotalFlux(emin,emax,thetamin,thetamax)
-  print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
-  
-  thetamin=0.0
-  thetamax=1.
-  emin=0.
-  emax=10000.
-  I = getTotalFlux(emin,emax,thetamin,thetamax)
-  print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
-  
-  thetamin=0.0
-  thetamax=1.
-  emin=0.
-  emax=100000.
-  I = getTotalFlux(emin,emax,thetamin,thetamax)
-  print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
-  
-  thetamin=cos(70.*pi/180.)
-  thetamax=1.
-  emin=0.
-  emax=100000.
-  I = getTotalFlux(emin,emax,thetamin,thetamax)
-  print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
-  
+  print("I = {0:10.4f} Hz cm^-2 = {5} cm^-2/min for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*60))
+
   thetamin=0.
-  thetamax=cos(math.atan2(7.,5.9))
-  emin=0.
-  emax=100000.
+  thetamax=1.
+  emin=1.
+  emax=1000.
   I = getTotalFlux(emin,emax,thetamin,thetamax)
-  print("I = {0:10.4f} Hz cm^-2 = {5} Hz m^-2 for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*100**2))
+  print("I = {0:10.4f} Hz cm^-2 = {5} cm^-2/min for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*60.))

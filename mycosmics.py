@@ -34,7 +34,7 @@ def differentialFlux(energy,costheta):
   -----
     dE
 
-  in units of Hz m^-2 sr^-1 GeV^-1
+  in units of Hz cm^-2 sr^-1 GeV^-1
   """
   p1 = 0.102573
   p2 = -0.068287
