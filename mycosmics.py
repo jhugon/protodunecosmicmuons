@@ -36,11 +36,6 @@ def differentialFlux(energy,costheta):
 
   in units of Hz m^-2 sr^-1 GeV^-1
   """
-
-  assert(costheta <= 1.)
-  assert(costheta >= 0.)
-  assert(energy >= 0.)
-  
   p1 = 0.102573
   p2 = -0.068287
   p3 = 0.958633
@@ -51,33 +46,6 @@ def differentialFlux(energy,costheta):
   twopointseven = energy*(1+3.64/(energy*(costhetastar**1.29)))
   f = .140*(twopointseven**(-2.7))*((1./(1.+1.1*energy*costhetastar/115.))+0.054/(1.+1.1*energy*costhetastar/850.))
   return f
-
-class OnlineMeanVarianceCalc(object):
-  def __init__(self):
-    self.N = 0.
-    self.mean = 0.
-    self.M2 = 0.
-
-  def addPoint(self,x):
-    self.N += 1
-    delta = x - self.mean
-    self.mean += delta/self.N
-    self.M2 += delta*(x-self.mean)
-
-  def getMean(self):
-    if self.N <1:
-      return float('nan')
-    else:
-      return self.mean
-    
-  def getVariance(self):
-    if self.N < 2:
-      return float('nan')
-    else:
-      return self.M2 / (self.N - 1)
-  def getStdDev(self):
-    return math.sqrt(self.getVariance())
-
 
 #######################################3
 #
@@ -93,45 +61,41 @@ class OnlineMeanVarianceCalc(object):
 
 def mcInt(N,emin,emax,thetamin,thetamax):
   #print N,emin,emax,thetamin,thetamax
-  assert(emax>emin)
-  assert(thetamax>thetamin)
   costhetamin = cos(thetamin)
   costhetamax = cos(thetamax)
-  assert(costhetamax<costhetamin)
   sinthetamin = sin(thetamin)
   sinthetamax = sin(thetamax)
+  if costhetamax < costhetamin:
+    tmp = costhetamax
+    costhetamax = costhetamin
+    costhetamin = tmp
   totalvolume = abs(costhetamax-costhetamin)*(emax-emin)
-  fmax = differentialFlux(emin,costhetamin)
+  fmax = max(differentialFlux(emin,costhetamin),differentialFlux(emin,costhetamax))
 
   nAccept = 0
-  meanVarCalc = OnlineMeanVarianceCalc()
+  fvalSum = 0.
   energies = []
   thetas = []
   while nAccept < N:
-    #costheta = rand()*(costhetamax-costhetamin)+costhetamin
-    sintheta = rand()*(sinthetamax-sinthetamin)+sinthetamin
-    theta = math.asin(sintheta)
-    costheta = cos(theta)
+    #theta = rand()*(thetamax-thetamin)+thetamin
+    #costheta = cos(theta)
+    costheta = rand()*(costhetamax-costhetamin)+costhetamin
     energy = rand()*(emax-emin)+emin
     fval = differentialFlux(energy,costheta)
-    meanVarCalc.addPoint(fval)
+    fvalSum += fval
 
-    if fval >fmax:
-      raise Error("Got a larger fval than fmax for energy: %s costheta %s",energy,costheta)
     randfval = rand()*fmax
     if randfval <= fval:
+      theta = math.acos(costheta)
       thetas.append(theta)
       energies.append(energy)
       nAccept += 1
 
-  integralEstimate = totalvolume*meanVarCalc.getMean()
-  integralVariance = totalvolume**2*meanVarCalc.getVariance()/N
-  integralUnc = math.sqrt(integralVariance)
-
+  integralEstimate = totalvolume*fvalSum/N
   energies = array(energies)
   thetas = array(thetas)
 
-  return energies, thetas, integralEstimate, integralUnc
+  return energies, thetas, integralEstimate
 
 class Muon(object):
   def __init__(self,x,y,z,t,px,py,pz,e):
@@ -163,9 +127,7 @@ class Muon(object):
 def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
   m = MUONMASS
   assert(emin>=m)
-  assert(emax>emin)
-  assert(thetamax>thetamin)
-  energies, thetas, integralEstimate, integralUnc = mcInt(N,emin,emax,thetamin,thetamax)
+  energies, thetas, integralEstimate = mcInt(N,emin,emax,thetamin,thetamax)
   xs = rand(N)*(xmax-xmin) + xmin
   ys = rand(N)*(ymax-ymin) + ymin
   zs = rand(N)*(zmax-zmin) + zmin
@@ -176,7 +138,7 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
   phis = rand(N)*2*math.pi - math.pi
 
-  pys = ps*cos(thetas)
+  pys = -ps*cos(thetas)
   pxzs = ps*sin(thetas)
   pxs = pxzs*cos(phis)
   pzs = pxzs*sin(phis)
@@ -189,69 +151,96 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
 
 if __name__ == "__main__":
 
-  muons, integralEst = sample(10000,MUONMASS,1000,0.000,70.*math.pi/180,-1,1,-1,1,-1,1)
-  print integralEst
-  print len(muons)
-  #for muon in muons:
-  #  print muon.e, muon.thetaz
-  
-  import ROOT as root
-  from helpers import *
-  root.gROOT.SetBatch(True)
-  c = root.TCanvas()
-  
-  thetaHist = root.TH1F("theta","",30,0,90)
-  phiHist = root.TH1F("phi","",30,-180,180)
-  energyHist = root.TH1F("energy","",100,0,10)
-  
-  setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
-  setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
-  setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
-  
-  for muon in muons:
-    thetaHist.Fill(muon.thetaz*180/math.pi)
-    phiHist.Fill(muon.phiz*180/math.pi)
-    energyHist.Fill(muon.e)
-  
-  phiHist.Draw()
-  c.SaveAs("phiHist.png")
-  energyHist.Draw()
-  c.SaveAs("energyHist.png")
+  import argparse
 
-  thetaHistIntegral = thetaHist.Integral()
+  minenergy_default = MUONMASS
+  maxenergy_default = 1000.
+  mintheta_default = 0.
+  maxtheta_default = 90.
 
-  cos2ThetaGraph = root.TGraph()
-  cos2ThetaGraph.SetLineColor(root.kBlue)
-  #funcNormalization = (thetaHistIntegral/math.pi/0.25)
-  #funcNormalization = (thetaHistIntegral/(math.pi/4.))/(thetaHist.GetNbinsX())
-  funcNormalization = thetaHist.GetBinContent(1)/cos(thetaHist.GetXaxis().GetBinCenter(1)*math.pi/180.)**2
-  print funcNormalization
-  print thetaHist.GetBinContent(1)
-  print thetaHist.GetBinContent(1)/funcNormalization
-  for i in range(1,thetaHist.GetNbinsX()):
-    tmpTheta = thetaHist.GetXaxis().GetBinCenter(i)
-    tmpCos2 = funcNormalization*cos(tmpTheta*math.pi/180.)**2
-    cos2ThetaGraph.SetPoint(i-1,tmpTheta,tmpCos2) 
-
-  thetaHist.Draw()
-  cos2ThetaGraph.Draw("l")
-  c.SaveAs("thetaHist.png")
-
-  #############################################
+  parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
+  parser.add_argument('outfilename',
+                      help='Output file name')
+  parser.add_argument('--nEvents','-n', type=int,
+                      required=True,
+                      help='Number of events to generate')
+  parser.add_argument('--minenergy', type=float,
+                      default=minenergy_default,
+                      help='Minimum energy [GeV], default={0}'.format(minenergy_default))
+  parser.add_argument('--maxenergy', type=float,
+                      default=maxenergy_default,
+                      help='Maximum energy [GeV], default={0}'.format(maxenergy_default))
+  parser.add_argument('--mintheta', type=float,
+                      default=mintheta_default,
+                      help='Minimum zenith angle [degrees], default={0}'.format(mintheta_default))
+  parser.add_argument('--maxtheta', type=float,
+                      default=maxtheta_default,
+                      help='Maximum zenith angle [degrees], default={0}'.format(maxtheta_default))
+  parser.add_argument('--diagnostics','-d', action="store_true",
+                      help='Make diagnostic plots')
+  parser.add_argument('--debug','-D', action="store_true",
+                      help='Print debug messages')
+  parser.add_argument('--roottree','-R', action="store_true",
+                      help='Make ROOT Tree')
   
-  thetaIntHist = getIntegralHist(thetaHist,False)
-  energyIntHist = getIntegralHist(energyHist,False)
-  setHistTitles(thetaIntHist,thetaIntHist.GetXaxis().GetTitle(),"Events #geq X")
-  setHistTitles(energyIntHist,energyIntHist.GetXaxis().GetTitle(),"Events #geq X")
   
-  thetaIntHist.Draw()
-  c.SaveAs("thetaIntHist.png")
-  energyIntHist.Draw()
-  c.SaveAs("energyIntHist.png")
+  args = parser.parse_args()
 
-  with open("cosmics.txt",'w') as outfile:
+  print "N events: {0}".format(args.nEvents)
+  print "Energy range: {0:.3f}-{1:.3f} GeV".format(args.minenergy,args.maxenergy)
+  print "Theta range: {0:.3f}-{1:.3f} degrees".format(args.mintheta,args.maxtheta)
+  muons, integralEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,-1,1,-1,1,-1,1)
+  print "Flux: {0:.3g} Hz".format(integralEst)
+  print "Outputing HEPEVT file '{0}'".format(args.outfilename)
+  with open(args.outfilename,'w') as outfile:
     for i, muon in enumerate(muons):
       outfile.write("{0} {1}".format(i,1))
       outfile.write('\n')
       outfile.write(muon.hepevt())
       outfile.write('\n')
+
+  if args.debug:
+    print len(muons)
+    for muon in muons:
+      print muon
+      print muon.e, muon.thetaz
+
+  if args.diagnostics:
+    
+    import ROOT as root
+    from helpers import *
+    root.gROOT.SetBatch(True)
+    c = root.TCanvas()
+
+    thetaHist = root.TH1F("theta","",10,0,90)
+    phiHist = root.TH1F("phi","",30,-180,180)
+    energyHist = root.TH1F("energy","",100,0,10)
+    
+    setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
+    setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
+    setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
+    
+    for muon in muons:
+      thetaHist.Fill(muon.thetaz*180/math.pi)
+      phiHist.Fill(muon.phiz*180/math.pi)
+      energyHist.Fill(muon.e)
+    
+    phiHist.Draw()
+    c.SaveAs("phiHist.png")
+    c.SaveAs("phiHist.pdf")
+    energyHist.Draw()
+    c.SaveAs("energyHist.png")
+    c.SaveAs("energyHist.pdf")
+  
+    thetaHistIntegral = thetaHist.Integral()
+  
+    thetaHist.Draw()
+    c.SaveAs("thetaHist.png")
+    c.SaveAs("thetaHist.pdf")
+
+  if args.roottree:
+    from makeRootTree import makeRootTree
+    import os.path
+    outfileNameRoot = os.path.splitext(args.outfilename)[0] + ".root"
+    print "Outputing ROOT file '{0}' with tree name 'tree'".format(outfileNameRoot)
+    makeRootTree(args.outfilename,outfileNameRoot,-1,False)

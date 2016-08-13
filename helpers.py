@@ -14,6 +14,7 @@ import os
 import sys
 import time
 import datetime
+import random
 #import matplotlib.pyplot as mpl
 
 def getOrdinalStr(inInt):
@@ -1383,7 +1384,45 @@ def getHistMax(hist):
   iBin = hist.GetMaximumBin()
   result = hist.GetBinContent(iBin)
   return result
-  
+
+def makeStdAxisHist(histList,logy=False,freeTopSpace=0.5):
+  assert(len(histList)>0)
+  multiplier = 1./(1.-freeTopSpace)
+  yMin = 0.
+  yMax = 0.
+  xMin = 1e15
+  xMax = -1e15
+  for hist in histList:
+    histMax = getHistMax(hist)
+    yMax = max(yMax,histMax)
+    nBins = hist.GetNbinsX()
+    xMax = max(xMax,hist.GetXaxis().GetBinUpEdge(nBins))
+    xMin = min(xMin,hist.GetBinLowEdge(1))
+  if logy:
+    yMin = 10**(-1)
+    yMax = (math.log10(yMax) + 1.)*multiplier - 1.
+    yMax = 10**yMax
+  else:
+    yMax = yMax*multiplier
+  axisHist = root.TH2F("axisHist"+str(random.randint(1000,1000000)),"",1,xMin,xMax,1,yMin,yMax)
+  return axisHist
+
+def getLogBins(nBins,xMin,xMax):
+  xMinLog = math.log10(xMin)
+  delta = (math.log10(xMax)-xMinLog)/nBins
+  return [10**(xMinLog + x*delta) for x in range(nBins+1)]
+
+def drawNormalLegend(hists,labels,option="l"):
+  assert(len(hists)==len(labels))
+  #leg = root.TLegend(0.55,0.6,0.91,0.89)
+  #leg = root.TLegend(0.35,0.6,0.91,0.89)
+  leg = root.TLegend(0.40,0.7,0.91,0.89)
+  leg.SetLineColor(root.kWhite)
+  for hist,label in zip(hists,labels):
+    leg.AddEntry(hist,label,option)
+  return leg
+
+
 if __name__ == "__main__":
 
   root.gROOT.SetBatch(True)
