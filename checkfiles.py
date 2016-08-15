@@ -25,8 +25,8 @@ if __name__ == "__main__":
   c = root.TCanvas()
   fileConfigs = [
     {
-        "fn": "testcosmics.root",
-        "title": "testcosmics.root",
+        "fn": "cosmics.root",
+        "title": "mycosmics.py",
         "color": root.kRed,
     },
     #{
@@ -118,18 +118,16 @@ if __name__ == "__main__":
         "title": "Muon #theta with respect to zenith [degrees]",
         "cuts" : "1./sin(thetaz)",
         "binning": [45,0.,90.],
-        "plottf1": "1000*cos(x/180*pi)*cos(x/180*pi)",
+        "plottf1": "0.045*cos(x/180*pi)*cos(x/180*pi)",
         "titletf1": "cos^{2}(#theta)",
         "colortf1": root.kGreen+1,
+        "normalize": True
     },
     {
         "name": "thetazNorm",
         "var": "thetaz*180/pi",
         "title": "Muon #theta with respect to zenith [degrees]",
         "binning": [45,0.,90.],
-        "plottf1": "0.05*cos(x/180*pi)*cos(x/180*pi)",
-        "titletf1": "cos^{2}(#theta)",
-        "colortf1": root.kGreen+1,
         "normalize": True
     },
     {

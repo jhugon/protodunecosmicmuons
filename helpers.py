@@ -1404,6 +1404,8 @@ def makeStdAxisHist(histList,logy=False,freeTopSpace=0.5):
     yMax = 10**yMax
   else:
     yMax = yMax*multiplier
+    if yMax == 0.:
+      yMax = 1.
   axisHist = root.TH2F("axisHist"+str(random.randint(1000,1000000)),"",1,xMin,xMax,1,yMin,yMax)
   return axisHist
 
