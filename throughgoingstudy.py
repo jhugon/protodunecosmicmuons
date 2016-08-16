@@ -109,6 +109,31 @@ class Projector(object):
         maxZHits = True
     return minZHits, maxZHits
 
+  def getExtremaZPoints(self,tree):
+    minXHits, maxXHits = self.hitsXFaces(tree)
+    minYHits, maxYHits = self.hitsYFaces(tree)
+    minZHits, maxZHits = self.hitsZFaces(tree)
+    minXPoint, maxXPoint = self.projectXBounds(tree)
+    minYPoint, maxYPoint = self.projectYBounds(tree)
+    minZPoint, maxZPoint = self.projectZBounds(tree)
+    points = [minZPoint,maxZPoint,minYPoint,maxYPoint,minXPoint,maxXPoint]
+    hits = [minZHits,maxZHits,minYHits,maxYHits,minXHits,maxXHits]
+    minPoint = [0.,0.,1.e15]
+    maxPoint = [0.,0.,-1.e15]
+    enteredDetector = False
+    for point,hit in zip(points,hits):
+      if hit:
+        enteredDetector = True
+        if point[2] < minPoint[2]:
+          minPoint = point
+        if point[2] > maxPoint[2]:
+          maxPoint = point
+    if not enteredDetector:
+      return None, None
+    assert(minPoint[2]< 1.e15)
+    assert(maxPoint[2]> -1.e15)
+    return minPoint, maxPoint
+
 def plotFaceHits(tree,projector):
   hitPointsMinX = []
   notHitPointsMinX = []
@@ -283,6 +308,9 @@ if __name__ == "__main__":
   minz = -0.5
   maxz = 695
 
+  distanceToZFaceCut = 35.
+  distanceToXFaceCut = 18.
+
   projector = Projector(minx,maxx,miny,maxy,minz,maxz)
   projectorLeft = Projector(minx,0.,miny,maxy,minz,maxz)
   projectorRight = Projector(0.,maxx,miny,maxy,minz,maxz)
@@ -307,66 +335,262 @@ if __name__ == "__main__":
   
   nEventsTotal = 0
   nEventsHitFrontBackZ = 0
-
+  nEventsEntered = 0
+  nEventsEnteredLeft = 0
+  nEventsEnteredRight = 0
+  nEventsCuts = 0
+  nEventsCutsLeft = 0
+  nEventsCutsRight = 0
   
   dxHitFrontBackHist = Hist(20,0,720)
   dxHitFrontBackLeftHist = Hist(10,0,360)
   dxHitFrontBackRightHist = Hist(10,0,360)
+  dxHitCutsHist = Hist(20,0,720)
+  dxHitCutsLeftHist = Hist(10,0,360)
+  dxHitCutsRightHist = Hist(10,0,360)
+  dzHitCutsHist = Hist(20,maxz-minz-distanceToZFaceCut,maxz-minz)
+  dzHitCutsLeftHist = Hist(20,maxz-minz-distanceToZFaceCut,maxz-minz)
+  dzHitCutsRightHist = Hist(20,maxz-minz-distanceToZFaceCut,maxz-minz)
+
+  #dxdzHitLeftHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
+  #dxdzHitRightHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
+  dxdzHitLeftHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
+  dxdzHitRightHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
 
   for iEvent in range(tree.GetEntries()):
     if iEvent > 10000:
-      #break
-      pass
+      break
+      #pass
     tree.GetEntry(iEvent)
     nEventsTotal += 1
-    minpoint, maxpoint = projector.projectZBounds(tree)
-    hitMin,hitMax = projector.hitsZFaces(tree)
-    if hitMin and hitMax:
+    #minpointX, maxpointX = projector.projectXBounds(tree)
+    #minpointY, maxpointY = projector.projectYBounds(tree)
+    minpointZ, maxpointZ = projector.projectZBounds(tree)
+    #minpointLeftX, maxpointLeftX = projectorLeft.projectXBounds(tree)
+    #minpointLeftY, maxpointLeftY = projectorLeft.projectYBounds(tree)
+    minpointLeftZ, maxpointLeftZ = projectorLeft.projectZBounds(tree)
+    #minpointRightX, maxpointRightX = projectorRight.projectXBounds(tree)
+    #minpointRightY, maxpointRightY = projectorRight.projectYBounds(tree)
+    minpointRightZ, maxpointRightZ = projectorRight.projectZBounds(tree)
+    hitMinX, hitMaxX = projector.hitsXFaces(tree)
+    #hitMinY, hitMaxY = projector.hitsYFaces(tree)
+    hitMinZ, hitMaxZ = projector.hitsZFaces(tree)
+    hitMinXLeft, hitMaxXLeft = projectorLeft.hitsXFaces(tree)
+    #hitMinYLeft, hitMaxYLeft = projectorLeft.hitsYFaces(tree)
+    hitMinZLeft, hitMaxZLeft = projectorLeft.hitsZFaces(tree)
+    hitMinXRight, hitMaxXRight = projectorRight.hitsXFaces(tree)
+    #hitMinYRight, hitMaxYRight = projectorRight.hitsYFaces(tree)
+    hitMinZRight, hitMaxZRight = projectorRight.hitsZFaces(tree)
+    ## Just hitting front and back of TPC(s)
+    if hitMinZ and hitMaxZ:
       nEventsHitFrontBackZ += 1
-      dxHitFrontBackHist.Fill(abs(maxpoint[0]-minpoint[0]))
-    hitMinLeft, hitMaxLeft = projectorLeft.hitsZFaces(tree)
-    if hitMinLeft and hitMaxLeft:
-      dxHitFrontBackLeftHist.Fill(abs(maxpoint[0]-minpoint[0]))
-    hitMinRight, hitMaxRight = projectorRight.hitsZFaces(tree)
-    if hitMinRight and hitMaxRight:
-      dxHitFrontBackRightHist.Fill(abs(maxpoint[0]-minpoint[0]))
+      dxHitFrontBackHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
+    if hitMinZLeft and hitMaxZLeft:
+      dxHitFrontBackLeftHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
+    if hitMinZRight and hitMaxZRight:
+      dxHitFrontBackRightHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
+    ## Getting entry/exit points ordered by z
+    minpoint, maxpoint = projector.getExtremaZPoints(tree)
+    minpointLeft, maxpointLeft = projectorLeft.getExtremaZPoints(tree)
+    minpointRight, maxpointRight = projectorRight.getExtremaZPoints(tree)
+    if minpoint:
+      nEventsEntered += 1
+      if minpoint[2] < minz + distanceToZFaceCut and maxpoint[2] > maxz - distanceToZFaceCut:
+        #if minpoint[0] > maxpoint[0]  and minpoint[0] > maxx - distanceToXFaceCut and maxpoint[0] < minx + distanceToXFaceCut:
+        #    dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]))
+        #    dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]))
+        #    nEventsCuts += 1
+        #elif maxpoint[0] > minpoint[0] and maxpoint[0] > maxx - distanceToXFaceCut and minpoint[0] < minx + distanceToXFaceCut:
+            dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]))
+            dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]))
+            nEventsCuts += 1
+    if minpointLeft:
+      nEventsEnteredLeft += 1
+      dxdzHitLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]),abs(maxpointLeft[2]-minpointLeft[2]))
+      if minpointLeft[2] < minz + distanceToZFaceCut and maxpointLeft[2] > maxz - distanceToZFaceCut:
+        #if minpointLeft[0] > maxpointLeft[0] and minpointLeft[0] > 0. - distanceToXFaceCut and maxpointLeft[0] < minx + distanceToXFaceCut:
+        #  nEventsCutsLeft += 1
+        #  dxHitCutsLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]))
+        #  dzHitCutsLeftHist.Fill(abs(maxpointLeft[2]-minpointLeft[2]))
+        #elif maxpointLeft[0] > minpointLeft[0] and maxpointLeft[0] > 0. - distanceToXFaceCut and minpointLeft[0] < minx + distanceToXFaceCut:
+          dxHitCutsLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]))
+          dzHitCutsLeftHist.Fill(abs(maxpointLeft[2]-minpointLeft[2]))
+          nEventsCutsLeft += 1
+    if minpointRight:
+      nEventsEnteredRight += 1
+      dxdzHitRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]),abs(maxpointRight[2]-minpointRight[2]))
+      if minpointRight[2] < minz + distanceToZFaceCut and maxpointRight[2] > maxz - distanceToZFaceCut:
+        #if minpointRight[0] > maxpointRight[0] and minpointRight[0] > maxx - distanceToXFaceCut and maxpointRight[0] < 0. + distanceToXFaceCut:
+        #  nEventsCutsRight += 1
+        #  dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]))
+        #  dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]))
+        #elif maxpointRight[0] > minpointRight[0] and maxpointRight[0] > maxx - distanceToXFaceCut and minpointRight[0] < 0. + distanceToXFaceCut:
+          nEventsCutsRight += 1
+          dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]))
+          dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]))
     
     #print("Event: {:4} x y z: {:6.1f} {:6.1f} {:6.1f} px py pz E: {:7.2f} {:7.2f} {:7.2f} {:7.2f}".format(iEvent,tree.x,tree.y,tree.z,tree.px,tree.py,tree.pz,tree.E))
-    #print(" {}    {}".format(minpoint,maxpoint))
+    #print(" {}    {}".format(minpointZ,maxpointZ))
     #print(" {}    {}".format(hitMin,hitMax))
 
   eventWeight = sampleRate/float(nEventsTotal)
   print("eventWeight: {} Hz".format(eventWeight))
   print("Rate going through front and back: {} Hz".format(nEventsHitFrontBackZ*eventWeight))
+  print("Rate going through detector: {} Hz".format(nEventsEntered*eventWeight))
+  print("Rate going through left detector: {} Hz".format(nEventsEnteredLeft*eventWeight))
+  print("Rate going through right detector: {} Hz".format(nEventsEnteredRight*eventWeight))
+  print("Rate passing cuts, whole detector: {} Hz".format(nEventsCuts*eventWeight))
+  print("Rate passing cuts, left detector: {} Hz".format(nEventsCutsLeft*eventWeight))
+  print("Rate passing cuts, right detector: {} Hz".format(nEventsCutsRight*eventWeight))
 
   dxHitFrontBackHist.Scale(eventWeight)
-  setHistTitles(dxHitFrontBackHist,"|x_{front}-x_{rear}| [cm]","Rate/bin [Hz]")
+  setHistTitles(dxHitFrontBackHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   #normToBinWidth(dxHitFrontBackHist)
   #setHistTitles(dxHitFrontBackHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
   dxHitFrontBackHist.UseCurrentStyle()
   dxHitFrontBackHist.Draw("hist")
   drawStandardCaptions(c,"",captionright1="For events passing through front",captionright2="& rear z-faces of detector")
+  c.SaveAs("dxHitFrontBack.png")
   c.SaveAs("dxHitFrontBack.pdf")
 
   dxHitFrontBackIntegralHist = getIntegralHist(dxHitFrontBackHist)
-  dxHitFrontBackIntegralHist.GetYaxis().SetTitle("Rate for X-axis value #geq |x_{front}-x_{rear}| [Hz]")
+  dxHitFrontBackIntegralHist.GetYaxis().SetTitle("Rate for X-axis value #geq |#Delta x| [Hz]")
   #setHistTitles(dxHitFrontBackHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
   dxHitFrontBackIntegralHist.Draw("hist")
-  drawStandardCaptions(c,"",captionright1="For events passing through front",captionright2="& rear z-faces of detector")
+  drawStandardCaptions(c,"Includes both left and right TPCs",captionright1="For events passing through front",captionright2="& rear z-faces of detector")
+  c.SaveAs("dxHitFrontBackIntegral.png")
   c.SaveAs("dxHitFrontBackIntegral.pdf")
 
   #######
 
   dxHitFrontBackLeftHist.Scale(eventWeight)
-  setHistTitles(dxHitFrontBackLeftHist,"|x_{front}-x_{rear}| [cm]","Rate/bin [Hz]")
+  setHistTitles(dxHitFrontBackLeftHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   dxHitFrontBackLeftHist.UseCurrentStyle()
   dxHitFrontBackLeftHist.Draw("hist")
   drawStandardCaptions(c,"Left TPC",captionright1="For events passing through front",captionright2="& rear z-faces of detector")
+  c.SaveAs("dxHitFrontBackLeft.png")
   c.SaveAs("dxHitFrontBackLeft.pdf")
 
   dxHitFrontBackRightHist.Scale(eventWeight)
-  setHistTitles(dxHitFrontBackRightHist,"|x_{front}-x_{rear}| [cm]","Rate/bin [Hz]")
+  setHistTitles(dxHitFrontBackRightHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   dxHitFrontBackRightHist.UseCurrentStyle()
   dxHitFrontBackRightHist.Draw("hist")
   drawStandardCaptions(c,"Right TPC",captionright1="For events passing through front",captionright2="& rear z-faces of detector")
+  c.SaveAs("dxHitFrontBackRight.png")
   c.SaveAs("dxHitFrontBackRight.pdf")
+
+  #######
+  ## Cuts
+
+  dxHitCutsHist.Scale(eventWeight)
+  setHistTitles(dxHitCutsHist,"|#Delta x| [cm]","Rate/bin [Hz]")
+  #normToBinWidth(dxHitCutsHist)
+  #setHistTitles(dxHitCutsHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
+  dxHitCutsHist.UseCurrentStyle()
+  dxHitCutsHist.Draw("hist")
+  drawStandardCaptions(c,"Across left and right TPCs",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
+  c.SaveAs("dxHitCuts.png")
+  c.SaveAs("dxHitCuts.pdf")
+
+  dxHitCutsLeftHist.Scale(eventWeight)
+  setHistTitles(dxHitCutsLeftHist,"|#Delta x| [cm]","Rate/bin [Hz]")
+  dxHitCutsLeftHist.UseCurrentStyle()
+  dxHitCutsLeftHist.Draw("hist")
+  drawStandardCaptions(c,"Left TPC",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
+  c.SaveAs("dxHitCutsLeft.png")
+  c.SaveAs("dxHitCutsLeft.pdf")
+
+  dxHitCutsRightHist.Scale(eventWeight)
+  setHistTitles(dxHitCutsRightHist,"|#Delta z| [cm]","Rate/bin [Hz]")
+  dxHitCutsRightHist.UseCurrentStyle()
+  dxHitCutsRightHist.Draw("hist")
+  drawStandardCaptions(c,"Right TPC",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
+  c.SaveAs("dxHitCutsRight.png")
+  c.SaveAs("dxHitCutsRight.pdf")
+
+  dzHitCutsHist.Scale(eventWeight)
+  setHistTitles(dzHitCutsHist,"|#Delta z| [cm]","Rate/bin [Hz]")
+  #normToBinWidth(dzHitCutsHist)
+  #setHistTitles(dzHitCutsHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
+  dzHitCutsHist.UseCurrentStyle()
+  dzHitCutsHist.Draw("hist")
+  drawStandardCaptions(c,"Across left and right TPCs",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
+  c.SaveAs("dzHitCuts.png")
+  c.SaveAs("dzHitCuts.pdf")
+
+  dzHitCutsLeftHist.Scale(eventWeight)
+  setHistTitles(dzHitCutsLeftHist,"|#Delta z| [cm]","Rate/bin [Hz]")
+  dzHitCutsLeftHist.UseCurrentStyle()
+  dzHitCutsLeftHist.Draw("hist")
+  drawStandardCaptions(c,"Left TPC",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
+  c.SaveAs("dzHitCutsLeft.png")
+  c.SaveAs("dzHitCutsLeft.pdf")
+
+  dzHitCutsRightHist.Scale(eventWeight)
+  setHistTitles(dzHitCutsRightHist,"|#Delta z| [cm]","Rate/bin [Hz]")
+  dzHitCutsRightHist.UseCurrentStyle()
+  dzHitCutsRightHist.Draw("hist")
+  drawStandardCaptions(c,"Right TPC",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
+  c.SaveAs("dzHitCutsRight.png")
+  c.SaveAs("dzHitCutsRight.pdf")
+
+  ############
+  ### 2D plots of Delta z v Delta x
+  setupCOLZFrame(c)
+  #c.SetLogz()
+  dxdzHitLeftHist.Scale(eventWeight)
+  setHistTitles(dxdzHitLeftHist,"|#Delta x| [cm]", "|#Delta z| [cm]","Rate/bin [Hz]")
+  #setHistRange(dxdzHitLeftHist,300,maxx,400,maxz-minz)
+  dxdzHitLeftHist.Draw("colz")
+  drawStandardCaptions(c,"Left TPC")
+  c.SaveAs("dxdzHitLeft.png")
+  c.SaveAs("dxdzHitLeft.pdf")
+
+  dxdzHitLeftIntegralHist = getIntegralHist(dxdzHitLeftHist)
+  dxdzHitLeftIntegralHist.GetZaxis().SetTitle("Rate for X #geq |#Delta x| and Y #geq |#Delta z| [Hz]")
+  #setHistRange(dxdzHitLeftIntegralHist,300,maxx,400,maxz-minz)
+  dxdzHitLeftIntegralHist.Draw("colz")
+  drawStandardCaptions(c,"Left TPC")
+  c.SaveAs("dxdzHitLeftIntegral.png")
+  c.SaveAs("dxdzHitLeftIntegral.pdf")
+
+  setupCOLZFrame(c,True)
+  c.SetLogy(True)
+  hists = []
+  labels = []
+  for i, xBin in enumerate([4,5,6,7]):
+    deltaZMin = dxdzHitLeftIntegralHist.GetYaxis().GetBinLowEdge(xBin)
+    hist = getYBinHist(dxdzHitLeftIntegralHist,xBin)
+    hist.UseCurrentStyle()
+    hist.SetLineColor(i+1)
+    hists.append(hist)
+    labels.append(r"|#Delta z| #geq {:.0f} cm".format(deltaZMin))
+  axisHist = makeStdAxisHist(hists,logy=True,freeTopSpace=0.35,xlim=[200,maxx])
+  axisHist.Draw()
+  setHistTitles(axisHist,"|#Delta x| [cm]","Rate for X #geq |#Delta x| [Hz]")
+  for hist in hists:
+    hist.Draw("histsame")
+  leg = drawNormalLegend(hists,labels)
+  c.SaveAs("dxdzHitLeftIntegralScan.png")
+  c.SaveAs("dxdzHitLeftIntegralScan.pdf")
+  c.SetLogy(False)
+  setupCOLZFrame(c,True)
+
+  dxdzHitRightHist.Scale(eventWeight)
+  setHistTitles(dxdzHitRightHist,"|#Delta x| [cm]", "|#Delta z| [cm]","Rate/bin [Hz]")
+  #setHistRange(dxdzHitRightHist,300,maxx,400,maxz-minz)
+  drawStandardCaptions(c,"Right TPC")
+  dxdzHitRightHist.Draw("colz")
+  c.SaveAs("dxdzHitRight.png")
+  c.SaveAs("dxdzHitRight.pdf")
+
+  dxdzHitRightIntegralHist = getIntegralHist(dxdzHitRightHist)
+  dxdzHitRightIntegralHist.GetZaxis().SetTitle("Rate for X #geq |#Delta x| and Y #geq |#Delta z| [Hz]")
+  #setHistRange(dxdzHitRightIntegralHist,300,maxx,400,maxz-minz)
+  dxdzHitRightIntegralHist.Draw("colz")
+  drawStandardCaptions(c,"Right TPC")
+  c.SaveAs("dxdzHitRightIntegral.png")
+  c.SaveAs("dxdzHitRightIntegral.pdf")
+
+
+
