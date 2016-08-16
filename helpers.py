@@ -1338,7 +1338,7 @@ def getEfficiencyInterval(passed,total):
   high = eff.ClopperPearson(int(total),int(passed),quant,True)
   return [low,nom,high]
 
-def drawStandardCaptions(canvas,caption1,caption2="",caption3="",caption4="",caption5="",preliminaryString=""):
+def drawStandardCaptions(canvas,caption,captionleft1="",captionleft2="",captionleft3="",captionright1="",captionright2="",captionright3="",preliminaryString=""):
   tlatex = root.TLatex()
   tlatex.SetNDC()
 
@@ -1348,13 +1348,15 @@ def drawStandardCaptions(canvas,caption1,caption2="",caption3="",caption4="",cap
   tlatex.DrawLatex(gStyle.GetPadLeftMargin(),0.96,preliminaryString)
 
   tlatex.SetTextAlign(32)
-  tlatex.DrawLatex(1.0-gStyle.GetPadRightMargin(),0.96,caption1)
+  tlatex.DrawLatex(1.0-canvas.GetRightMargin(),0.96,caption)
   tlatex.SetTextAlign(12)
-  tlatex.DrawLatex(0.02+gStyle.GetPadLeftMargin(),0.88,caption2)
-  tlatex.DrawLatex(0.02+gStyle.GetPadLeftMargin(),0.82,caption3)
-  tlatex.DrawLatex(0.02+gStyle.GetPadLeftMargin(),0.76,caption4)
+  tlatex.DrawLatex(0.02+canvas.GetLeftMargin(),0.88,captionleft1)
+  tlatex.DrawLatex(0.02+canvas.GetLeftMargin(),0.82,captionleft2)
+  tlatex.DrawLatex(0.02+canvas.GetLeftMargin(),0.76,captionleft3)
   tlatex.SetTextAlign(32)
-  tlatex.DrawLatex(0.97-gStyle.GetPadRightMargin(),0.88,caption5)
+  tlatex.DrawLatex(0.97-canvas.GetRightMargin(),0.88,captionright1)
+  tlatex.DrawLatex(0.97-canvas.GetRightMargin(),0.82,captionright2)
+  tlatex.DrawLatex(0.97-canvas.GetRightMargin(),0.76,captionright3)
   return tlatex
 
 def copyTreeBranchToNewNameTree(tree,oldBranchName,newBranchName):
@@ -1424,6 +1426,11 @@ def drawNormalLegend(hists,labels,option="l"):
     leg.AddEntry(hist,label,option)
   return leg
 
+def setupCOLZFrame(pad,reset=False):
+   if reset:
+     pad.SetRightMargin(gStyle.GetPadRightMargin())
+   else:
+     pad.SetRightMargin(0.15)
 
 if __name__ == "__main__":
 
