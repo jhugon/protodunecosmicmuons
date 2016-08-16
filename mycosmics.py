@@ -137,14 +137,14 @@ class Muon(object):
     result += " {p.px} {p.py} {p.pz} {p.e} {mass} {p.x} {p.y} {p.z} {p.t}".format(p=self,mass=MUONMASS)
     return result
 
-def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,y,zmin,zmax):
+def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
   """
   args:
     N: n events to generate
     emin, emax: muon energy bounds in GeV
     thetamin,thetamax: azimuthal angle bounds in rad
     xmin,xmax: min and max x positions in cm
-    y: y position in cm (up)
+    ymin,ymax: min and max y positions in cm
     zmin,zmax: min and max z positions in cm
   returns:
     muons: list of muon objects
@@ -156,7 +156,9 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,y,zmin,zmax):
   print ("Flux: {0:.3f} Hz cm^-2".format(integralEstimate))
   rateEstimate = integralEstimate*(xmax-xmin)*(zmax-zmin)
   xs = rand(N)*(xmax-xmin) + xmin
-  ys = ones(N)*y
+  ys = ones(N)*ymin
+  if ymax != ymin:
+    ys = rand(N)*(ymax-ymin) + ymin
   zs = rand(N)*(zmax-zmin) + zmin
   ts = zeros(N)
 
@@ -178,17 +180,19 @@ def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,y,zmin,zmax):
 
 if __name__ == "__main__":
 
+  import os.path
   import argparse
 
   minenergy_default = MUONMASS
   maxenergy_default = 1000.
   mintheta_default = 0.
   maxtheta_default = 90.
-  minx_default = -360-180
-  maxx_default = 360+180
-  minz_default = -0.5-1200.
-  maxz_default = 695+1200.
-  y_default = 607.5
+  minx_default = -360-10
+  maxx_default = 360+10
+  minz_default = -0.5-100.
+  maxz_default = 695+100.
+  miny_default = 0.
+  maxy_default = 607.5
 
   parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
   parser.add_argument('outfilename',
@@ -212,17 +216,20 @@ if __name__ == "__main__":
                       default=minx_default,
                       help='Minimum intial x coordinate [cm], default={0}'.format(minx_default))
   parser.add_argument('--maxx', type=float,
-                      default=minx_default,
+                      default=maxx_default,
                       help='Maximum intial x coordinate [cm], default={0}'.format(maxx_default))
+  parser.add_argument('--miny', type=float,
+                      default=miny_default,
+                      help='Minimum intial y coordinate [cm], default={0}'.format(miny_default))
+  parser.add_argument('--maxy', type=float,
+                      default=maxy_default,
+                      help='Maximum intial y coordinate [cm], default={0}'.format(maxy_default))
   parser.add_argument('--minz', type=float,
                       default=minz_default,
                       help='Minimum intial z coordinate [cm], default={0}'.format(minz_default))
   parser.add_argument('--maxz', type=float,
-                      default=minz_default,
+                      default=maxz_default,
                       help='Maximum intial z coordinate [cm], default={0}'.format(maxz_default))
-  parser.add_argument('-y', type=float,
-                      default=y_default,
-                      help='Intial y coordinate [cm], default={0}'.format(y_default))
   parser.add_argument('--diagnostics','-d', action="store_true",
                       help='Make diagnostic plots')
   parser.add_argument('--debug','-D', action="store_true",
@@ -237,10 +244,10 @@ if __name__ == "__main__":
   print "Energy range: {0:9.3f} to {1:9.3f} GeV".format(args.minenergy,args.maxenergy)
   print "Theta range:  {0:9.2f} to {1:9.2f} degrees".format(args.mintheta,args.maxtheta)
   print "x range:      {0:9.2f} to {1:9.2f} cm".format(args.minx,args.maxx)
-  print "y:            {0:9.2f} cm".format(args.y)
+  print "y range:      {0:9.2f} to {1:9.2f} cm".format(args.miny,args.maxy)
   print "z range:      {0:9.2f} to {1:9.2f} cm".format(args.minz,args.maxz)
-  muons, rateEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,args.minx,args.maxx,args.y,args.minz,args.maxz)
-  print "Rate: {0:.3g} Hz".format(rateEst)
+  muons, rateEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,args.minx,args.maxx,args.miny,args.maxy,args.minz,args.maxz)
+  print "Rate: {0} Hz".format(rateEst)
   print "Outputing HEPEVT file '{0}'".format(args.outfilename)
   with open(args.outfilename,'w') as outfile:
     for i, muon in enumerate(muons):
@@ -274,23 +281,21 @@ if __name__ == "__main__":
       thetaHist.Fill(muon.thetaz*180/math.pi)
       phiHist.Fill(muon.phiz*180/math.pi)
       energyHist.Fill(muon.e)
+
+    outfileNameBase = os.path.splitext(args.outfilename)[0]
     
     phiHist.Draw()
-    c.SaveAs("phiHist.png")
-    c.SaveAs("phiHist.pdf")
+    c.SaveAs(outfileNameBase+"_phiHist.png")
+    c.SaveAs(outfileNameBase+"_phiHist.pdf")
     energyHist.Draw()
-    c.SaveAs("energyHist.png")
-    c.SaveAs("energyHist.pdf")
-  
-    thetaHistIntegral = thetaHist.Integral()
-  
+    c.SaveAs(outfileNameBase+"_energyHist.png")
+    c.SaveAs(outfileNameBase+"_energyHist.pdf")
     thetaHist.Draw()
-    c.SaveAs("thetaHist.png")
-    c.SaveAs("thetaHist.pdf")
+    c.SaveAs(outfileNameBase+"_thetaHist.png")
+    c.SaveAs(outfileNameBase+"_thetaHist.pdf")
 
   if args.roottree:
     from makeRootTree import makeRootTree
-    import os.path
     outfileNameRoot = os.path.splitext(args.outfilename)[0] + ".root"
     print "Outputing ROOT file '{0}' with tree name 'tree'".format(outfileNameRoot)
     makeRootTree(args.outfilename,outfileNameRoot,-1,False)
