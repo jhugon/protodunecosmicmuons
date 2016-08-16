@@ -11,15 +11,6 @@ from rootpy.plotting import Hist, Hist2D, Canvas, Graph
 from rootpy.tree import Tree
 from rootpy.io import root_open
 
-def normToBinWidth(hist):
-  xaxis = hist.GetXaxis()
-  nBins = xaxis.GetNbins()
-  for i in range(1,nBins+1):
-    binContent = hist.GetBinContent(i)
-    binWidth = hist.GetBinWidth(i)
-    hist.SetBinContent(i,binContent/binWidth)
-  return hist
-
 if __name__ == "__main__":
 
   c = root.TCanvas()

@@ -1432,6 +1432,15 @@ def setupCOLZFrame(pad,reset=False):
    else:
      pad.SetRightMargin(0.15)
 
+def normToBinWidth(hist):
+  xaxis = hist.GetXaxis()
+  nBins = xaxis.GetNbins()
+  for i in range(1,nBins+1):
+    binContent = hist.GetBinContent(i)
+    binWidth = hist.GetBinWidth(i)
+    hist.SetBinContent(i,binContent/binWidth)
+  return hist
+
 if __name__ == "__main__":
 
   root.gROOT.SetBatch(True)
