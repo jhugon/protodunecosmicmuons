@@ -15,11 +15,11 @@ Installing rootpy in your home directory
 
 In some temporary directory:
 
-git clone git://github.com/rootpy/rootpy.git
+::
 
-cd rootpy
-
-python setup.py install --user
+  git clone git://github.com/rootpy/rootpy.git
+  cd rootpy
+  python setup.py install --user
 
 Other references:
 -----------------
