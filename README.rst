@@ -10,6 +10,17 @@ main script is mycosmics.py.
 There is also a converter from HEPEVT to ROOT tree format program:
 makeRootTree.py.  It requires the rootpy python package.
 
+Installing rootpy in your home directory
+----------------------------------------
+
+In some temporary directory:
+
+git clone git://github.com/rootpy/rootpy.git
+
+cd rootpy
+
+python setup.py install --user
+
 Other references:
 -----------------
 
