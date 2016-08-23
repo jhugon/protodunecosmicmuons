@@ -351,6 +351,8 @@ if __name__ == "__main__":
   dzHitCutsHist = Hist(20,maxz-minz-distanceToZFaceCut,maxz-minz)
   dzHitCutsLeftHist = Hist(20,maxz-minz-distanceToZFaceCut,maxz-minz)
   dzHitCutsRightHist = Hist(20,maxz-minz-distanceToZFaceCut,maxz-minz)
+  thetaFrontBackHist = Hist(30,0,90)
+  thetaCutsHist = Hist(30,0,90)
 
   #dxdzHitLeftHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
   #dxdzHitRightHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
@@ -359,8 +361,8 @@ if __name__ == "__main__":
 
   for iEvent in range(tree.GetEntries()):
     if iEvent > 10000:
-      break
-      #pass
+      #break
+      pass
     tree.GetEntry(iEvent)
     nEventsTotal += 1
     #minpointX, maxpointX = projector.projectXBounds(tree)
@@ -385,6 +387,7 @@ if __name__ == "__main__":
     if hitMinZ and hitMaxZ:
       nEventsHitFrontBackZ += 1
       dxHitFrontBackHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
+      thetaFrontBackHist.Fill(tree.thetaz*180./pi)
     if hitMinZLeft and hitMaxZLeft:
       dxHitFrontBackLeftHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
     if hitMinZRight and hitMaxZRight:
@@ -403,6 +406,7 @@ if __name__ == "__main__":
         #elif maxpoint[0] > minpoint[0] and maxpoint[0] > maxx - distanceToXFaceCut and minpoint[0] < minx + distanceToXFaceCut:
             dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]))
             dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]))
+            thetaCutsHist.Fill(tree.thetaz*180/pi)
             nEventsCuts += 1
     if minpointLeft:
       nEventsEnteredLeft += 1
@@ -533,6 +537,13 @@ if __name__ == "__main__":
   drawStandardCaptions(c,"Right TPC",captionright1="Track within {} cm of z-faces".format(distanceToXFaceCut))
   c.SaveAs("dzHitCutsRight.png")
   c.SaveAs("dzHitCutsRight.pdf")
+
+  thetaFrontBackHist.UseCurrentStyle()
+  setHistTitles(thetaFrontBackHist,"#theta with respect to zenith [deg]","Events/bin")
+  thetaFrontBackHist.Draw("hist")
+  c.SaveAs("thetaHists.png")
+  c.SaveAs("thetaHists.pdf")
+  print("thetaFrontBackHist integral: %s" % thetaFrontBackHist.Integral())
 
   ############
   ### 2D plots of Delta z v Delta x
