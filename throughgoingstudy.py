@@ -2,6 +2,7 @@
 
 import re
 import math
+import sys
 
 import ROOT as root
 from helpers import *
@@ -298,9 +299,38 @@ def plotCoordVTheta(tree,projector):
   ax.set_ylabel("y [cm]")
   fig.savefig("maxZyVthetaz.png")
 
+def estimatePerSrForVerticalAndEgt1GeV(tree,nmax=10000000000):
+  canvas = root.TCanvas("c2")
+
+  func = root.TF1("fitfunc","[0]*cos(x)*cos(x)",0,pi)
+
+  cuts = "E>1."
+  theta = Hist(100,0,0.5*pi)
+  theta.Sumw2()
+  theta.UseCurrentStyle()
+  tree.Draw("thetaz >> {}".format(theta.GetName()),cuts,"hist",nmax)
+  setHistTitles(theta,"#theta","Events/Sr")
+  drawStandardCaptions(canvas,"E_{#mu} > 1 GeV")
+  xAxis = theta.GetXaxis()
+  for iBinX in range(1,xAxis.GetNbins()+1):
+    xLow = xAxis.GetBinLowEdge(iBinX)
+    xHigh = xAxis.GetBinUpEdge(iBinX)
+    solidAngle = 2*pi*(-cos(xHigh)+cos(xLow))
+    binContent = theta.GetBinContent(iBinX)
+    theta.SetBinContent(iBinX,binContent/solidAngle)
+  theta.Draw("E")
+  fitResult = theta.Fit(func,"WLMSQ",'',0.05,0.3)
+  canvas.SaveAs("normalizationFit.png")
+
+  normalization = fitResult.Parameter(0)
+  normalizationUnc = fitResult.ParError(0)
+  return normalization, normalizationUnc
+
 if __name__ == "__main__":
   c = root.TCanvas()
 
+  NMAX = 10000000
+  #NMAX = 2000
   minx = -360
   maxx = 360
   miny = 0.
@@ -315,9 +345,10 @@ if __name__ == "__main__":
   projectorLeft = Projector(minx,0.,miny,maxy,minz,maxz)
   projectorRight = Projector(0.,maxx,miny,maxy,minz,maxz)
 
-  infilename = "cosmics.root" 
-  sampleRate = 8964.12
-  sampleArea = sampleRate/0.014/100**2
+  infilename = "cosmicsJustInProtoDUNE.root" 
+  sampleRate = 8887.949
+  #sampleArea = sampleRate/0.014/100**2
+  sampleArea = (maxx-minx)*(maxz-minz)/100**2
   detectorArea = (maxx-minx)*(maxz-minz)/100**2
   detectorRate = sampleRate*detectorArea/sampleArea
   print "Sample: "+infilename
@@ -325,10 +356,21 @@ if __name__ == "__main__":
   print "Sample Area: {} m^2".format(sampleArea)
   print "Detector Rate: {} Hz".format(detectorRate)
   print "Detector Area: {} m^2".format(detectorArea)
-  
 
   infile = root.TFile(infilename)
   tree = infile.Get("tree")
+  nEntries = min(NMAX,tree.GetEntries())
+  print "N events in sample: {}".format(nEntries)
+
+  nEvtsVertPerSr, nEvtsVertPerSrUnc = estimatePerSrForVerticalAndEgt1GeV(tree,NMAX)
+  print "N events per Sr vertical and E>1GeV: {} +/- {}".format(nEvtsVertPerSr,nEvtsVertPerSrUnc)
+  print "N events per Sr per m^2 vertical and E>1GeV: {}".format(nEvtsVertPerSr/sampleArea)
+  print "Vertical rate per Sr per m^2 and E>1GeV should be: {} Hz".format(70.)
+  print "Vertical rate per Sr and E>1GeV should be: {} Hz".format(70.*sampleArea)
+  print "Sample corresponds to {} s".format(nEvtsVertPerSr/sampleArea/70.)
+  eventWeight = 70.*sampleArea/float(nEvtsVertPerSr)
+  print "eventWeight: {} Hz".format(eventWeight)
+  print "Real Sample Rate: {} Hz".format(eventWeight*nEntries)
 
   #plotFaceHits(tree,projector)
   #plotCoordVTheta(tree,projector)
@@ -359,10 +401,7 @@ if __name__ == "__main__":
   dxdzHitLeftHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
   dxdzHitRightHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
 
-  for iEvent in range(tree.GetEntries()):
-    if iEvent > 10000:
-      #break
-      pass
+  for iEvent in range(nEntries):
     tree.GetEntry(iEvent)
     nEventsTotal += 1
     #minpointX, maxpointX = projector.projectXBounds(tree)
@@ -386,12 +425,12 @@ if __name__ == "__main__":
     ## Just hitting front and back of TPC(s)
     if hitMinZ and hitMaxZ:
       nEventsHitFrontBackZ += 1
-      dxHitFrontBackHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
-      thetaFrontBackHist.Fill(tree.thetaz*180./pi)
+      dxHitFrontBackHist.Fill(abs(maxpointZ[0]-minpointZ[0]),eventWeight)
+      thetaFrontBackHist.Fill(tree.thetaz*180./pi,eventWeight)
     if hitMinZLeft and hitMaxZLeft:
-      dxHitFrontBackLeftHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
+      dxHitFrontBackLeftHist.Fill(abs(maxpointZ[0]-minpointZ[0]),eventWeight)
     if hitMinZRight and hitMaxZRight:
-      dxHitFrontBackRightHist.Fill(abs(maxpointZ[0]-minpointZ[0]))
+      dxHitFrontBackRightHist.Fill(abs(maxpointZ[0]-minpointZ[0]),eventWeight)
     ## Getting entry/exit points ordered by z
     minpoint, maxpoint = projector.getExtremaZPoints(tree)
     minpointLeft, maxpointLeft = projectorLeft.getExtremaZPoints(tree)
@@ -400,45 +439,43 @@ if __name__ == "__main__":
       nEventsEntered += 1
       if minpoint[2] < minz + distanceToZFaceCut and maxpoint[2] > maxz - distanceToZFaceCut:
         #if minpoint[0] > maxpoint[0]  and minpoint[0] > maxx - distanceToXFaceCut and maxpoint[0] < minx + distanceToXFaceCut:
-        #    dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]))
-        #    dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]))
+        #    dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]),eventWeight)
+        #    dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]),eventWeight)
         #    nEventsCuts += 1
         #elif maxpoint[0] > minpoint[0] and maxpoint[0] > maxx - distanceToXFaceCut and minpoint[0] < minx + distanceToXFaceCut:
-            dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]))
-            dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]))
-            thetaCutsHist.Fill(tree.thetaz*180/pi)
+            dxHitCutsHist.Fill(abs(maxpoint[0]-minpoint[0]),eventWeight)
+            dzHitCutsHist.Fill(abs(maxpoint[2]-minpoint[2]),eventWeight)
+            thetaCutsHist.Fill(tree.thetaz*180/pi,eventWeight)
             nEventsCuts += 1
     if minpointLeft:
       nEventsEnteredLeft += 1
-      dxdzHitLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]),abs(maxpointLeft[2]-minpointLeft[2]))
+      dxdzHitLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]),abs(maxpointLeft[2]-minpointLeft[2]),eventWeight)
       if minpointLeft[2] < minz + distanceToZFaceCut and maxpointLeft[2] > maxz - distanceToZFaceCut:
         #if minpointLeft[0] > maxpointLeft[0] and minpointLeft[0] > 0. - distanceToXFaceCut and maxpointLeft[0] < minx + distanceToXFaceCut:
         #  nEventsCutsLeft += 1
-        #  dxHitCutsLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]))
-        #  dzHitCutsLeftHist.Fill(abs(maxpointLeft[2]-minpointLeft[2]))
+        #  dxHitCutsLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]),eventWeight)
+        #  dzHitCutsLeftHist.Fill(abs(maxpointLeft[2]-minpointLeft[2]),eventWeight)
         #elif maxpointLeft[0] > minpointLeft[0] and maxpointLeft[0] > 0. - distanceToXFaceCut and minpointLeft[0] < minx + distanceToXFaceCut:
-          dxHitCutsLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]))
-          dzHitCutsLeftHist.Fill(abs(maxpointLeft[2]-minpointLeft[2]))
+          dxHitCutsLeftHist.Fill(abs(maxpointLeft[0]-minpointLeft[0]),eventWeight)
+          dzHitCutsLeftHist.Fill(abs(maxpointLeft[2]-minpointLeft[2]),eventWeight)
           nEventsCutsLeft += 1
     if minpointRight:
       nEventsEnteredRight += 1
-      dxdzHitRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]),abs(maxpointRight[2]-minpointRight[2]))
+      dxdzHitRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]),abs(maxpointRight[2]-minpointRight[2]),eventWeight)
       if minpointRight[2] < minz + distanceToZFaceCut and maxpointRight[2] > maxz - distanceToZFaceCut:
         #if minpointRight[0] > maxpointRight[0] and minpointRight[0] > maxx - distanceToXFaceCut and maxpointRight[0] < 0. + distanceToXFaceCut:
         #  nEventsCutsRight += 1
-        #  dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]))
-        #  dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]))
+        #  dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]),eventWeight)
+        #  dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]),eventWeight)
         #elif maxpointRight[0] > minpointRight[0] and maxpointRight[0] > maxx - distanceToXFaceCut and minpointRight[0] < 0. + distanceToXFaceCut:
           nEventsCutsRight += 1
-          dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]))
-          dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]))
+          dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]),eventWeight)
+          dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]),eventWeight)
     
     #print("Event: {:4} x y z: {:6.1f} {:6.1f} {:6.1f} px py pz E: {:7.2f} {:7.2f} {:7.2f} {:7.2f}".format(iEvent,tree.x,tree.y,tree.z,tree.px,tree.py,tree.pz,tree.E))
     #print(" {}    {}".format(minpointZ,maxpointZ))
     #print(" {}    {}".format(hitMin,hitMax))
 
-  eventWeight = sampleRate/float(nEventsTotal)
-  print("eventWeight: {} Hz".format(eventWeight))
   print("Rate going through front and back: {} Hz".format(nEventsHitFrontBackZ*eventWeight))
   print("Rate going through detector: {} Hz".format(nEventsEntered*eventWeight))
   print("Rate going through left detector: {} Hz".format(nEventsEnteredLeft*eventWeight))
@@ -447,7 +484,6 @@ if __name__ == "__main__":
   print("Rate passing cuts, left detector: {} Hz".format(nEventsCutsLeft*eventWeight))
   print("Rate passing cuts, right detector: {} Hz".format(nEventsCutsRight*eventWeight))
 
-  dxHitFrontBackHist.Scale(eventWeight)
   setHistTitles(dxHitFrontBackHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   #normToBinWidth(dxHitFrontBackHist)
   #setHistTitles(dxHitFrontBackHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
@@ -467,7 +503,6 @@ if __name__ == "__main__":
 
   #######
 
-  dxHitFrontBackLeftHist.Scale(eventWeight)
   setHistTitles(dxHitFrontBackLeftHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   dxHitFrontBackLeftHist.UseCurrentStyle()
   dxHitFrontBackLeftHist.Draw("hist")
@@ -475,7 +510,6 @@ if __name__ == "__main__":
   c.SaveAs("dxHitFrontBackLeft.png")
   c.SaveAs("dxHitFrontBackLeft.pdf")
 
-  dxHitFrontBackRightHist.Scale(eventWeight)
   setHistTitles(dxHitFrontBackRightHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   dxHitFrontBackRightHist.UseCurrentStyle()
   dxHitFrontBackRightHist.Draw("hist")
@@ -486,7 +520,6 @@ if __name__ == "__main__":
   #######
   ## Cuts
 
-  dxHitCutsHist.Scale(eventWeight)
   setHistTitles(dxHitCutsHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   #normToBinWidth(dxHitCutsHist)
   #setHistTitles(dxHitCutsHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
@@ -496,7 +529,6 @@ if __name__ == "__main__":
   c.SaveAs("dxHitCuts.png")
   c.SaveAs("dxHitCuts.pdf")
 
-  dxHitCutsLeftHist.Scale(eventWeight)
   setHistTitles(dxHitCutsLeftHist,"|#Delta x| [cm]","Rate/bin [Hz]")
   dxHitCutsLeftHist.UseCurrentStyle()
   dxHitCutsLeftHist.Draw("hist")
@@ -504,7 +536,6 @@ if __name__ == "__main__":
   c.SaveAs("dxHitCutsLeft.png")
   c.SaveAs("dxHitCutsLeft.pdf")
 
-  dxHitCutsRightHist.Scale(eventWeight)
   setHistTitles(dxHitCutsRightHist,"|#Delta z| [cm]","Rate/bin [Hz]")
   dxHitCutsRightHist.UseCurrentStyle()
   dxHitCutsRightHist.Draw("hist")
@@ -512,7 +543,6 @@ if __name__ == "__main__":
   c.SaveAs("dxHitCutsRight.png")
   c.SaveAs("dxHitCutsRight.pdf")
 
-  dzHitCutsHist.Scale(eventWeight)
   setHistTitles(dzHitCutsHist,"|#Delta z| [cm]","Rate/bin [Hz]")
   #normToBinWidth(dzHitCutsHist)
   #setHistTitles(dzHitCutsHist,"|x_{front}-x_{rear}| [cm]","Rate/|x_{front}-x_{rear}| [Hz/cm]")
@@ -522,7 +552,6 @@ if __name__ == "__main__":
   c.SaveAs("dzHitCuts.png")
   c.SaveAs("dzHitCuts.pdf")
 
-  dzHitCutsLeftHist.Scale(eventWeight)
   setHistTitles(dzHitCutsLeftHist,"|#Delta z| [cm]","Rate/bin [Hz]")
   dzHitCutsLeftHist.UseCurrentStyle()
   dzHitCutsLeftHist.Draw("hist")
@@ -530,7 +559,6 @@ if __name__ == "__main__":
   c.SaveAs("dzHitCutsLeft.png")
   c.SaveAs("dzHitCutsLeft.pdf")
 
-  dzHitCutsRightHist.Scale(eventWeight)
   setHistTitles(dzHitCutsRightHist,"|#Delta z| [cm]","Rate/bin [Hz]")
   dzHitCutsRightHist.UseCurrentStyle()
   dzHitCutsRightHist.Draw("hist")
@@ -549,7 +577,6 @@ if __name__ == "__main__":
   ### 2D plots of Delta z v Delta x
   setupCOLZFrame(c)
   #c.SetLogz()
-  dxdzHitLeftHist.Scale(eventWeight)
   setHistTitles(dxdzHitLeftHist,"|#Delta x| [cm]", "|#Delta z| [cm]","Rate/bin [Hz]")
   #setHistRange(dxdzHitLeftHist,300,maxx,400,maxz-minz)
   dxdzHitLeftHist.Draw("colz")
@@ -587,7 +614,6 @@ if __name__ == "__main__":
   c.SetLogy(False)
   setupCOLZFrame(c,True)
 
-  dxdzHitRightHist.Scale(eventWeight)
   setHistTitles(dxdzHitRightHist,"|#Delta x| [cm]", "|#Delta z| [cm]","Rate/bin [Hz]")
   #setHistRange(dxdzHitRightHist,300,maxx,400,maxz-minz)
   drawStandardCaptions(c,"Right TPC")

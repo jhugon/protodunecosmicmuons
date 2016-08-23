@@ -225,7 +225,8 @@ def setStyle():
   
 setStyle()
 
-def setHistTitles(hist,xlabel,ylabel,zlabel=None):
+def setHistTitles(hist,xlabel,ylabel,zlabel=None,title=""):
+    hist.SetTitle(title)
     hist.GetXaxis().SetTitle(xlabel)
     hist.GetYaxis().SetTitle(ylabel)
     if zlabel:
@@ -1473,13 +1474,29 @@ def setupCOLZFrame(pad,reset=False):
      pad.SetRightMargin(0.15)
 
 def normToBinWidth(hist):
-  xaxis = hist.GetXaxis()
-  nBins = xaxis.GetNbins()
-  for i in range(1,nBins+1):
-    binContent = hist.GetBinContent(i)
-    binWidth = hist.GetBinWidth(i)
-    hist.SetBinContent(i,binContent/binWidth)
-  return hist
+  """
+  For TH1, normalizes bin contents to bin width (divides by bin width)
+  For TH2, normalizes bin contents to bin area (divides by bin area)
+  """
+  if hist.InheritsFrom("TH2"):
+    nBinsX = hist.GetNbinsX()
+    nBinsY = hist.GetNbinsY()
+    for iX in range(1,nBinsX+1):
+      for iY in range(1,nBinsY+1):
+        binContent = hist.GetBinContent(iX,iY)
+        binWidthX = hist.GetXaxis().GetBinWidth(iX)
+        binWidthY = hist.GetYaxis().GetBinWidth(iY)
+        binArea = binWidthX*binWidthY
+        hist.SetBinContent(iX,iY,binContent/binArea)
+    return hist
+  else:
+    xaxis = hist.GetXaxis()
+    nBins = xaxis.GetNbins()
+    for i in range(1,nBins+1):
+      binContent = hist.GetBinContent(i)
+      binWidth = hist.GetBinWidth(i)
+      hist.SetBinContent(i,binContent/binWidth)
+    return hist
 
 if __name__ == "__main__":
 
