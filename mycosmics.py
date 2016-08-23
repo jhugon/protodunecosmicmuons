@@ -187,10 +187,10 @@ if __name__ == "__main__":
   maxenergy_default = 1000.
   mintheta_default = 0.
   maxtheta_default = 90.
-  minx_default = -360-10
-  maxx_default = 360+10
-  minz_default = -0.5-100.
-  maxz_default = 695+100.
+  minx_default = -360#-10
+  maxx_default = 360#+10
+  minz_default = -0.5#-100.
+  maxz_default = 695#+100.
   miny_default = 0.
   maxy_default = 607.5
 
