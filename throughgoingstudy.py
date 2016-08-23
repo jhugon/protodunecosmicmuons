@@ -346,16 +346,10 @@ if __name__ == "__main__":
   projectorRight = Projector(0.,maxx,miny,maxy,minz,maxz)
 
   infilename = "cosmicsJustInProtoDUNE.root" 
-  sampleRate = 8887.949
   #sampleArea = sampleRate/0.014/100**2
   sampleArea = (maxx-minx)*(maxz-minz)/100**2
-  detectorArea = (maxx-minx)*(maxz-minz)/100**2
-  detectorRate = sampleRate*detectorArea/sampleArea
   print "Sample: "+infilename
-  print "Sample Rate: {} Hz".format(sampleRate)
   print "Sample Area: {} m^2".format(sampleArea)
-  print "Detector Rate: {} Hz".format(detectorRate)
-  print "Detector Area: {} m^2".format(detectorArea)
 
   infile = root.TFile(infilename)
   tree = infile.Get("tree")
@@ -375,7 +369,6 @@ if __name__ == "__main__":
   #plotFaceHits(tree,projector)
   #plotCoordVTheta(tree,projector)
   
-  nEventsTotal = 0
   nEventsHitFrontBackZ = 0
   nEventsEntered = 0
   nEventsEnteredLeft = 0
@@ -403,7 +396,8 @@ if __name__ == "__main__":
 
   for iEvent in range(nEntries):
     tree.GetEntry(iEvent)
-    nEventsTotal += 1
+    if tree.E <= 1.:
+      continue
     #minpointX, maxpointX = projector.projectXBounds(tree)
     #minpointY, maxpointY = projector.projectYBounds(tree)
     minpointZ, maxpointZ = projector.projectZBounds(tree)
