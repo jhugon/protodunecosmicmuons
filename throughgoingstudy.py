@@ -326,11 +326,79 @@ def estimatePerSrForVerticalAndEgt1GeV(tree,nmax=10000000000):
   normalizationUnc = fitResult.ParError(0)
   return normalization, normalizationUnc
 
+class VoxelAnalyzer(object):
+  """
+  Analyzer that checks and fills hists for a single voxel.
+  """
+  def __init__(self,minx,maxx,miny,maxy,minz,maxz):
+
+    self.minx = minx
+    self.miny = miny
+    self.minz = minz
+    self.maxx = maxx
+    self.maxy = maxy
+    self.maxz = maxz
+    self.projector = Projector(minx,maxx,miny,maxy,minz,maxz)
+
+    # Initialize hists
+    self.dxdzHist = Hist2D(10,0,maxx-minx,10,0,maxz-minz)
+
+  def analyze(self,tree,eventWeight=1.):
+    """
+    Make sure to select the event before passing tree to function
+    """
+    minPointZ, maxPointZ = self.projector.getExtremaZPoints(tree)
+    if not minPointZ:
+      return
+    dx = abs(maxPointZ[0] - minPointZ[0])
+    dz = abs(maxPointZ[2] - minPointZ[2])
+    self.dxdzHist.Fill(dx,dz,eventWeight)
+
+class ManyVoxelAnalyzer(object):
+  def __init__(self,minx,maxx,miny,maxy,minz,maxz,delta):
+
+    self.minx = minx
+    self.miny = miny
+    self.minz = minz
+    self.maxx = maxx
+    self.maxy = maxy
+    self.maxz = maxz
+    assert(abs(minx) == abs(maxx))
+    xBounds = arange(0.,maxx,delta)
+    xBounds = append(xBounds,maxx)
+    xBounds = append(-xBounds[:0:-1],xBounds)
+    yBounds = arange(0.,maxy,delta)
+    yBounds = append(yBounds,maxy)
+    zBounds = arange(0.,maxz,delta)
+    zBounds = append(zBounds,maxz)
+    self.nX = len(xBounds)-1
+    self.nY = len(yBounds)-1
+    self.nZ = len(zBounds)-1
+    print self.nX
+    print self.nY
+    print self.nZ
+    self.analyzers = []
+    for iX in range(self.nX):
+      for iY in range(self.nY):
+        for iZ in range(self.nZ):
+          self.analyzers.append(VoxelAnalyzer(xBounds[iX],xBounds[iX+1],yBounds[iY],yBounds[iY+1],zBounds[iZ],zBounds[iZ+1]))
+
+  def analyze(self,tree,eventWeight=1.):
+    for analyzer in self.analyzers:
+      analyzer.analyze(tree,eventWeight)
+
+  def getdxdzHist(self):
+    dxdzHist = self.analyzers[0].dxdzHist.Clone(self.analyzers[0].dxdzHist.GetName()+"15j125h")
+    for analyzer in self.analyzers:
+      dxdzHist.Add(analyzer.dxdzHist)
+    dxdzHist.Scale(1./len(self.analyzers))
+    return dxdzHist
+
 if __name__ == "__main__":
   c = root.TCanvas()
 
-  NMAX = 10000000
-  #NMAX = 2000
+  #NMAX = 10000000
+  NMAX = 200
   minx = -360
   maxx = 360
   miny = 0.
@@ -344,6 +412,7 @@ if __name__ == "__main__":
   projector = Projector(minx,maxx,miny,maxy,minz,maxz)
   projectorLeft = Projector(minx,0.,miny,maxy,minz,maxz)
   projectorRight = Projector(0.,maxx,miny,maxy,minz,maxz)
+  manyVoxelAnalyzer = ManyVoxelAnalyzer(-20,20,miny,miny+40,minz,minz+40,10.)
 
   infilename = "cosmicsJustInProtoDUNE.root" 
   #sampleArea = sampleRate/0.014/100**2
@@ -398,6 +467,9 @@ if __name__ == "__main__":
     tree.GetEntry(iEvent)
     if tree.E <= 1.:
       continue
+
+    #manyVoxelAnalyzer.analyze(tree,eventWeight)
+
     #minpointX, maxpointX = projector.projectXBounds(tree)
     #minpointY, maxpointY = projector.projectYBounds(tree)
     minpointZ, maxpointZ = projector.projectZBounds(tree)
@@ -623,5 +695,8 @@ if __name__ == "__main__":
   c.SaveAs("dxdzHitRightIntegral.png")
   c.SaveAs("dxdzHitRightIntegral.pdf")
 
+  manyVoxeldxdz = manyVoxelAnalyzer.getdxdzHist()
+  manyVoxeldxdz.Draw("colz")
+  c.SaveAs("dxdzVoxel.png")
 
 
