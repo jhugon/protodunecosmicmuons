@@ -1175,8 +1175,8 @@ def getIntegralHist(hist,setErrors=True):
   if hist.InheritsFrom("TH2"):
     nBinsX = result.GetNbinsX()
     nBinsY = result.GetNbinsY()
-    for iX in range(nBinsX+1):
-      for iY in range(nBinsY+1):
+    for iX in range(nBinsX+2):
+      for iY in range(nBinsY+2):
         sumw = 0.0
         sumw2 = 0.0
         for jX in range(iX,nBinsX+2):

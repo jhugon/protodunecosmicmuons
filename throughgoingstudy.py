@@ -397,8 +397,8 @@ class ManyVoxelAnalyzer(object):
 if __name__ == "__main__":
   c = root.TCanvas()
 
-  #NMAX = 10000000
-  NMAX = 200
+  NMAX = 10000000
+  NMAX = 2000
   minx = -360
   maxx = 360
   miny = 0.
@@ -412,6 +412,9 @@ if __name__ == "__main__":
   projector = Projector(minx,maxx,miny,maxy,minz,maxz)
   projectorLeft = Projector(minx,0.,miny,maxy,minz,maxz)
   projectorRight = Projector(0.,maxx,miny,maxy,minz,maxz)
+  #projector10cmSlice = Projector(-10.,0.,miny,maxy,minz,maxz)
+  projector10cmSlices = [Projector(-360.+10*i,-350.+10*i,miny,maxy,minz,maxz) for i in range(5)]
+  nSlices = len(projector10cmSlices)
   manyVoxelAnalyzer = ManyVoxelAnalyzer(-20,20,miny,miny+40,minz,minz+40,10.)
 
   infilename = "cosmicsJustInProtoDUNE.root" 
@@ -462,11 +465,15 @@ if __name__ == "__main__":
   #dxdzHitRightHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
   dxdzHitLeftHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
   dxdzHitRightHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
+  dxdzHit10cmSliceHist = Hist2D(10,0.,10.,28,0.,700.)
 
   for iEvent in range(nEntries):
     tree.GetEntry(iEvent)
     if tree.E <= 1.:
       continue
+    if iEvent % 100 == 0:
+      print "iEvent: {}".format(iEvent)
+      sys.stdout.flush()
 
     #manyVoxelAnalyzer.analyze(tree,eventWeight)
 
@@ -537,6 +544,13 @@ if __name__ == "__main__":
           nEventsCutsRight += 1
           dxHitCutsRightHist.Fill(abs(maxpointRight[0]-minpointRight[0]),eventWeight)
           dzHitCutsRightHist.Fill(abs(maxpointRight[2]-minpointRight[2]),eventWeight)
+    #minpoint10cmSlice, maxpoint10cmSlice = projector10cmSlice.getExtremaZPoints(tree)
+    #if minpoint10cmSlice:
+    #  dxdzHit10cmSliceHist.Fill(abs(maxpoint10cmSlice[0]-minpoint10cmSlice[0]),abs(maxpoint10cmSlice[2]-minpoint10cmSlice[2]),eventWeight)
+    for p in projector10cmSlices:
+      minpoint10cmSlice, maxpoint10cmSlice = p.getExtremaZPoints(tree)
+      if minpoint10cmSlice:
+        dxdzHit10cmSliceHist.Fill(abs(maxpoint10cmSlice[0]-minpoint10cmSlice[0]),abs(maxpoint10cmSlice[2]-minpoint10cmSlice[2]),eventWeight/nSlices)
     
     #print("Event: {:4} x y z: {:6.1f} {:6.1f} {:6.1f} px py pz E: {:7.2f} {:7.2f} {:7.2f} {:7.2f}".format(iEvent,tree.x,tree.y,tree.z,tree.px,tree.py,tree.pz,tree.E))
     #print(" {}    {}".format(minpointZ,maxpointZ))
@@ -662,7 +676,7 @@ if __name__ == "__main__":
   c.SetLogy(True)
   hists = []
   labels = []
-  for i, xBin in enumerate([4,5,6,7]):
+  for i, xBin in enumerate([4,7]):
     deltaZMin = dxdzHitLeftIntegralHist.GetYaxis().GetBinLowEdge(xBin)
     hist = getYBinHist(dxdzHitLeftIntegralHist,xBin)
     hist.UseCurrentStyle()
@@ -699,4 +713,45 @@ if __name__ == "__main__":
   manyVoxeldxdz.Draw("colz")
   c.SaveAs("dxdzVoxel.png")
 
+  # 10cm wide x slice
 
+  setupCOLZFrame(c)
+  #c.SetLogz()
+  setHistTitles(dxdzHit10cmSliceHist,"|#Delta x| [cm]", "|#Delta z| [cm]","Rate/bin [Hz]")
+  #setHistRange(dxdzHit10cmSliceHist,300,maxx,400,maxz-minz)
+  dxdzHit10cmSliceHist.Draw("colz")
+  drawStandardCaptions(c,"10 cm wide slice of TPC")
+  c.SaveAs("dxdzHit10cmSlice.png")
+  c.SaveAs("dxdzHit10cmSlice.pdf")
+
+  dxdzHit10cmSliceIntegralHist = getIntegralHist(dxdzHit10cmSliceHist)
+  dxdzHit10cmSliceIntegralHist.GetZaxis().SetTitle("Rate for X #geq |#Delta x| and Y #geq |#Delta z| [Hz]")
+  #setHistRange(dxdzHit10cmSliceIntegralHist,300,maxx,400,maxz-minz)
+  dxdzHit10cmSliceIntegralHist.Draw("colz")
+  drawStandardCaptions(c,"10 cm wide slice of TPC")
+  c.SaveAs("dxdzHit10cmSliceIntegral.png")
+  c.SaveAs("dxdzHit10cmSliceIntegral.pdf")
+
+  setupCOLZFrame(c,True)
+  c.SetLogy(True)
+  hists = []
+  labels = []
+  #for i, yBin in enumerate([5,8,9,10]):
+  for i, yBin in enumerate([6,11]):
+    deltaXMin = dxdzHit10cmSliceIntegralHist.GetXaxis().GetBinLowEdge(yBin)
+    hist = getXBinHist(dxdzHit10cmSliceIntegralHist,yBin)
+    hist.UseCurrentStyle()
+    hist.SetLineColor(i+1)
+    hists.append(hist)
+    labels.append(r"|#Delta x| #geq {:.0f} cm".format(deltaXMin))
+  axisHist = makeStdAxisHist(hists,logy=True,freeTopSpace=0.35,xlim=[0,300])
+  axisHist.Draw()
+  setHistTitles(axisHist,"|#Delta z| [cm]","Rate for X #geq |#Delta z| [Hz]")
+  for hist in hists:
+    hist.Draw("histsame")
+  leg = drawNormalLegend(hists,labels)
+  drawStandardCaptions(c,"10 cm wide slice of TPC")
+  c.SaveAs("dxdzHit10cmSliceIntegralScan.png")
+  c.SaveAs("dxdzHit10cmSliceIntegralScan.pdf")
+  c.SetLogy(False)
+  setupCOLZFrame(c,True)
