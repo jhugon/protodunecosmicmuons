@@ -398,7 +398,7 @@ if __name__ == "__main__":
   c = root.TCanvas()
 
   NMAX = 10000000
-  NMAX = 2000
+  #NMAX = 2000
   minx = -360
   maxx = 360
   miny = 0.
@@ -442,6 +442,7 @@ if __name__ == "__main__":
   #plotCoordVTheta(tree,projector)
   
   nEventsHitFrontBackZ = 0
+  nEventsHitFrontBackLeftZ = 0
   nEventsEntered = 0
   nEventsEnteredLeft = 0
   nEventsEnteredRight = 0
@@ -463,17 +464,17 @@ if __name__ == "__main__":
 
   #dxdzHitLeftHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
   #dxdzHitRightHist = Hist2D(90,0.,maxx,50,0.,maxz-minz)
-  dxdzHitLeftHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
-  dxdzHitRightHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10])
-  dxdzHit10cmSliceHist = Hist2D(10,0.,10.,28,0.,700.)
+  dxdzHitLeftHist = Hist2D(90,0.,maxx,[0,100,200,300,400,500,600,650,maxz-minz-25,maxz-minz-10,maxz-minz])
+  dxdzHitRightHist = Hist2D(90,0.,maxx,[0,200,400,600,650,maxz-minz-25,maxz-minz-10,maxz-minz])
+  dxdzHit10cmSliceHist = Hist2D(10,0.,10.,70,0.,700.)
 
   for iEvent in range(nEntries):
     tree.GetEntry(iEvent)
-    if tree.E <= 1.:
-      continue
     if iEvent % 100 == 0:
       print "iEvent: {}".format(iEvent)
       sys.stdout.flush()
+    if tree.E <= 1.:
+      continue
 
     #manyVoxelAnalyzer.analyze(tree,eventWeight)
 
@@ -500,6 +501,8 @@ if __name__ == "__main__":
       nEventsHitFrontBackZ += 1
       dxHitFrontBackHist.Fill(abs(maxpointZ[0]-minpointZ[0]),eventWeight)
       thetaFrontBackHist.Fill(tree.thetaz*180./pi,eventWeight)
+    if hitMinZLeft and hitMaxZLeft:
+      nEventsHitFrontBackLeftZ += 1
     if hitMinZLeft and hitMaxZLeft:
       dxHitFrontBackLeftHist.Fill(abs(maxpointZ[0]-minpointZ[0]),eventWeight)
     if hitMinZRight and hitMaxZRight:
@@ -557,6 +560,7 @@ if __name__ == "__main__":
     #print(" {}    {}".format(hitMin,hitMax))
 
   print("Rate going through front and back: {} Hz".format(nEventsHitFrontBackZ*eventWeight))
+  print("Rate going through front and back of left detector: {} Hz".format(nEventsHitFrontBackLeftZ*eventWeight))
   print("Rate going through detector: {} Hz".format(nEventsEntered*eventWeight))
   print("Rate going through left detector: {} Hz".format(nEventsEnteredLeft*eventWeight))
   print("Rate going through right detector: {} Hz".format(nEventsEnteredRight*eventWeight))
@@ -676,19 +680,24 @@ if __name__ == "__main__":
   c.SetLogy(True)
   hists = []
   labels = []
-  for i, xBin in enumerate([4,7]):
+  for i, xBin in enumerate([1,2,4,7,11]):
     deltaZMin = dxdzHitLeftIntegralHist.GetYaxis().GetBinLowEdge(xBin)
     hist = getYBinHist(dxdzHitLeftIntegralHist,xBin)
     hist.UseCurrentStyle()
-    hist.SetLineColor(i+1)
+    color = i + 1
+    if color >= 5:
+      color += 1
+    hist.SetLineColor(color)
     hists.append(hist)
     labels.append(r"|#Delta z| #geq {:.0f} cm".format(deltaZMin))
-  axisHist = makeStdAxisHist(hists,logy=True,freeTopSpace=0.35,xlim=[200,maxx])
+  labels[-1] = "|\Delta z| = whole TPC"
+  axisHist = makeStdAxisHist(hists,logy=True,freeTopSpace=0.35)#,xlim=[200,maxx])
   axisHist.Draw()
   setHistTitles(axisHist,"|#Delta x| [cm]","Rate for X #geq |#Delta x| [Hz]")
   for hist in hists:
     hist.Draw("histsame")
   leg = drawNormalLegend(hists,labels)
+  drawStandardCaptions(c,"Left TPC, E_{#mu} > 1 GeV")
   c.SaveAs("dxdzHitLeftIntegralScan.png")
   c.SaveAs("dxdzHitLeftIntegralScan.pdf")
   c.SetLogy(False)
@@ -737,20 +746,24 @@ if __name__ == "__main__":
   hists = []
   labels = []
   #for i, yBin in enumerate([5,8,9,10]):
-  for i, yBin in enumerate([6,11]):
+  for i, yBin in enumerate([1,6,11]):
     deltaXMin = dxdzHit10cmSliceIntegralHist.GetXaxis().GetBinLowEdge(yBin)
     hist = getXBinHist(dxdzHit10cmSliceIntegralHist,yBin)
     hist.UseCurrentStyle()
-    hist.SetLineColor(i+1)
+    color = i + 1
+    if color >= 5:
+      color += 1
+    hist.SetLineColor(color)
     hists.append(hist)
     labels.append(r"|#Delta x| #geq {:.0f} cm".format(deltaXMin))
-  axisHist = makeStdAxisHist(hists,logy=True,freeTopSpace=0.35,xlim=[0,300])
+  labels[-1] = "|\Delta x| = 10 cm"
+  axisHist = makeStdAxisHist(hists,logy=True,freeTopSpace=0.35,xlim=[0,500])
   axisHist.Draw()
   setHistTitles(axisHist,"|#Delta z| [cm]","Rate for X #geq |#Delta z| [Hz]")
   for hist in hists:
     hist.Draw("histsame")
   leg = drawNormalLegend(hists,labels)
-  drawStandardCaptions(c,"10 cm wide slice of TPC")
+  drawStandardCaptions(c,"10 cm wide slice of TPC, E_{#mu} > 1 GeV")
   c.SaveAs("dxdzHit10cmSliceIntegralScan.png")
   c.SaveAs("dxdzHit10cmSliceIntegralScan.pdf")
   c.SetLogy(False)
