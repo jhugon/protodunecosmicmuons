@@ -7,6 +7,7 @@ import csv
 import glob
 from math import exp
 from math import sqrt
+from math import log
 from math import log10
 import math
 import array
@@ -15,6 +16,8 @@ import sys
 import time
 import datetime
 import random
+import uuid
+import numbers
 #import matplotlib.pyplot as mpl
 
 def getOrdinalStr(inInt):
@@ -1448,7 +1451,7 @@ def makeStdAxisHist(histList,logy=False,freeTopSpace=0.5,xlim=[],ylim=[]):
   if len(ylim)==2:
     yMin = ylim[0]
     yMax = ylim[1]
-  axisHist = root.TH2F("axisHist"+str(random.randint(1000,1000000)),"",1,xMin,xMax,1,yMin,yMax)
+  axisHist = root.TH2F(uuid.uuid1().hex,"",1,xMin,xMax,1,yMin,yMax)
   return axisHist
 
 def getLogBins(nBins,xMin,xMax):
@@ -1497,6 +1500,53 @@ def normToBinWidth(hist):
       binWidth = hist.GetBinWidth(i)
       hist.SetBinContent(i,binContent/binWidth)
     return hist
+
+def Hist(*args):
+  """
+  Returns TH1F with UUID for name and "" for title.
+  The arguments are used as the binning.
+  """
+  name = uuid.uuid1().hex
+  hist = None
+  if len(args) == 1 and type(args[0]) == list:
+    hist = root.TH1F(name,"",len(args[0])-1,array.array('f',args[0]))
+  elif len(args) == 3:
+    for i in range(3):
+      if not isinstance(args[i],numbers.Number):
+        raise Exception(i,"th argument is not a number")
+    hist = root.TH1F(name,"",args[0],args[1],args[2])
+  else:
+    raise Exception("Hist: Innapropriate arguments, requires either nBins, low, high or a list of bin edges:",args)
+  return hist
+
+def Hist2D(*args):
+  """
+  Returns TH1F with UUID for name and "" for title.
+  The arguments are used as the binning.
+  """
+  name = uuid.uuid1().hex
+  hist = None
+  if len(args) == 2 and type(args[0]) == list and type(args[1]) == list:
+    hist = root.TH2F(name,"",len(args[0])-1,array.array('f',args[0]),len(args[1])-1,array.array('f',args[1]))
+  elif len(args) == 6:
+    for i in range(6):
+      if not isinstance(args[i],numbers.Number):
+        raise Exception(i,"th argument is not a number")
+    hist = root.TH2F(name,"",args[0],args[1],args[2],args[3],args[4],args[5])
+  elif len(args) == 4:
+    if type(args[0]) == list:
+      for i in range(1,4):
+        if not isinstance(args[i],numbers.Number):
+          raise Exception(i,"th argument is not a number")
+      hist = root.TH2F(name,"",len(args[0])-1,array.array('d',args[0]),args[1],args[2],args[3])
+    elif type(args[3]) == list:
+      for i in range(3):
+        if not isinstance(args[i],numbers.Number):
+          raise Exception(i,"th argument is not a number")
+      hist = root.TH2F(name,"",args[0],args[1],args[2],len(args[3])-1,array.array('d',args[3]))
+  else:
+    raise Exception("Hist: Innapropriate arguments, requires either nBins, low, high or a list of bin edges:",args)
+  return hist
 
 if __name__ == "__main__":
 
