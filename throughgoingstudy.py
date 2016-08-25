@@ -11,10 +11,6 @@ root.gROOT.SetBatch(True)
 from scipy import *
 import matplotlib.pyplot as mpl
 
-from rootpy.plotting import Hist, Hist2D, Canvas, Graph
-from rootpy.tree import Tree
-from rootpy.io import root_open
-
 class Projector(object):
 
   def __init__(self,minx,maxx,miny,maxy,minz,maxz):
