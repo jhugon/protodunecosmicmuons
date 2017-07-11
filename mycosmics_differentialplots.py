@@ -7,8 +7,13 @@ from matplotlib import pyplot as mpl
 from mycosmics import differentialFlux, MUONMASS
 
 def dIdE_only(energy,costhetaMin,costhetaMax):
+  """
+  In units of Hz cm^-2 GeV^-1
+  """
   assert(costhetaMin<costhetaMax)
   result, uncertainty = quad(lambda x: differentialFlux(energy,x),costhetaMin,costhetaMax)
+  result *= 2*pi
+  uncertainty *= 2*pi
   return result
 
 def dIdtheta_only(costheta,eMin,eMax):
@@ -28,6 +33,7 @@ def getTotalFlux(eMin,eMax,costhetamin,costhetamax):
   # y,x -> energy, costheta
   result, uncertainty = dblquad(differentialFlux,costhetamin,costhetamax,lambda x: eMin, lambda x: eMax)
   result *= 2*pi
+  uncertainty *= 2*pi
   return result
 
 if __name__ == "__main__":
@@ -73,9 +79,9 @@ if __name__ == "__main__":
   dIdE = [dIdE_only(energy,costhetamin,costhetamax)*2*pi for energy in energies]
   
   fig, ax = mpl.subplots()
-  ax.plot(energies,dIdE)
+  ax.loglog(energies,dIdE)
   ax.set_xlabel("E [GeV]")
-  ax.set_ylabel("dI/dE [Hz cm$^{-2}$ sr$^{-1}$ GeV$^{-1}$]")
+  ax.set_ylabel("dI/dE [Hz cm$^{-2}$ GeV$^{-1}$]")
   ax.text(0.95,0.95,r"{0:.2f} < cos($\theta$) < {1:.2f}".format(costhetamin,costhetamax),transform=ax.transAxes,verticalalignment="top",horizontalalignment="right")
   fig.savefig("dIdE_thetaInt.png")
   
@@ -124,3 +130,55 @@ if __name__ == "__main__":
   emax=1000.
   I = getTotalFlux(emin,emax,thetamin,thetamax)
   print("I = {0:10.4f} Hz cm^-2 = {5} cm^-2/min for theta in {1:.2f}, {2:.2f} and E in {3:.2f}, {4:.2f} GeV".format(I,acos(thetamax)*180/pi,acos(thetamin)*180/pi,emin,emax,I*60.))
+
+  ##############################################################
+
+  thetamin=cos(5.*pi/180.)
+  thetamax=1.
+  energyBins = linspace(0.,1000.,21)
+  binWidth = energyBins[1]-energyBins[0]
+  Is = []
+  for iBin in range(len(energyBins)-1):
+    Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
+  fig, ax = mpl.subplots()
+  ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
+  ax.plot(energyBins[1:],1e3*energyBins[1:]**(-1.7),"g-")
+  ax.set_yscale('log')
+  ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
+  ax.set_xlabel("E [GeV]")
+  ax.set_ylabel("I [Hz m$^{{-2}}$ per {0:.1f} GeV]".format(binWidth))
+  #ax.set_xlim(1,2000)
+  #ax.set_ylim(0.002,0.2)
+  fig.savefig("I_1000.png")
+  
+  energyBins = linspace(0.,10.,101)
+  binWidth = energyBins[1]-energyBins[0]
+  Is = []
+  for iBin in range(len(energyBins)-1):
+    Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
+  fig, ax = mpl.subplots()
+  ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
+  ax.plot(energyBins[1:],2e-3*energyBins[1:]**(-2.7),"g-")
+  ax.set_yscale('linear')
+  ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
+  ax.set_xlabel("E [GeV]")
+  ax.set_ylabel("I [Hz m$^{{-2}}$ per {0:.1f} GeV]".format(binWidth))
+  #ax.set_xlim(1,2000)
+  #ax.set_ylim(0.002,0.2)
+  fig.savefig("I_10.png")
+  
+  energyBins = linspace(0.,2.,21)
+  binWidth = energyBins[1]-energyBins[0]
+  Is = []
+  for iBin in range(len(energyBins)-1):
+    Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
+  fig, ax = mpl.subplots()
+  ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
+  ax.plot(energyBins[1:],2e-3*energyBins[1:]**(-1.7),"g-")
+  ax.set_yscale('linear')
+  ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
+  ax.set_xlabel("E [GeV]")
+  ax.set_ylabel("I [Hz m$^{{-2}}$ per {0:.1f} GeV]".format(binWidth))
+  #ax.set_xlim(1,2000)
+  #ax.set_ylim(0.002,0.2)
+  fig.savefig("I_2.png")
