@@ -4,7 +4,7 @@ from math import acos,asin,atan2
 from scipy import *
 from scipy.integrate import quad, dblquad
 from matplotlib import pyplot as mpl
-from mycosmics import differentialFlux, MUONMASS
+from mycosmics import differentialFlux, MUONMASS, lowEnergyVerticalParameterization
 
 def dIdE_only(energy,costhetaMin,costhetaMax):
   """
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
   fig, ax = mpl.subplots()
   ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
-  ax.plot(energyBins[1:],1e3*energyBins[1:]**(-1.7),"g-")
+  ax.plot(energyBins[1:],1*lowEnergyVerticalParameterization(energyBins[1:]),"c-",lw=3)
   ax.set_yscale('log')
   ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
   ax.set_xlabel("E [GeV]")
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
   fig, ax = mpl.subplots()
   ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
-  ax.plot(energyBins[1:],2e-3*energyBins[1:]**(-2.7),"g-")
+  ax.plot(energyBins[1:],3e-3*lowEnergyVerticalParameterization(energyBins[1:]),"c-",lw=3)
   ax.set_yscale('linear')
   ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
   ax.set_xlabel("E [GeV]")
@@ -166,7 +166,7 @@ if __name__ == "__main__":
   #ax.set_xlim(1,2000)
   #ax.set_ylim(0.002,0.2)
   fig.savefig("I_10.png")
-  
+
   energyBins = linspace(0.,2.,21)
   binWidth = energyBins[1]-energyBins[0]
   Is = []
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
   fig, ax = mpl.subplots()
   ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
-  ax.plot(energyBins[1:],2e-3*energyBins[1:]**(-1.7),"g-")
+  ax.plot(energyBins[1:],3e-3*lowEnergyVerticalParameterization(energyBins[1:]),"c-",lw=3)
   ax.set_yscale('linear')
   ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
   ax.set_xlabel("E [GeV]")

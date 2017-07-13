@@ -2,9 +2,29 @@
 
 import math
 from scipy import *
+from scipy.special import erf
 from scipy.integrate import dblquad
 
 MUONMASS = 0.1134289267
+
+def lowEnergyVerticalParameterization(momentum):
+    """
+    My reading off of the 1-1000 GeV data in PDG review plot
+    For vertical muons
+    dN/dE in m^-2 s^-1 sr^-1 (GeV/c)^-1
+    momentum in GeV
+
+    Modified to make flat under 1 GeV
+    """
+    sigmoidTurnOnTerm = 0.5*(tanh((momentum-1.)*5.) + 1.)
+    sigmoidTurnOffTerm = 0.5*(tanh((1-momentum)*5.) + 1.)
+    result = momentum**(-2.7)*10**(-0.6*(log10(momentum)-1.6)**2+2.8)
+    result *= sigmoidTurnOnTerm
+    result += sigmoidTurnOffTerm*1.**(-2.7)*10**(-0.6*(log10(1.)-1.6)**2+2.8)
+    #result += sigmoidTurnOffTerm*18.365
+    #for m, r in zip(momentum,result):
+    #    print(m,r)
+    return result
 
 #Double_t fluxformula(Double_t *x, Double_t *par)
 #{
