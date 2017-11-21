@@ -156,16 +156,18 @@ if __name__ == "__main__":
   Is = []
   for iBin in range(len(energyBins)-1):
     Is.append(10**4*getTotalFlux(energyBins[iBin],energyBins[iBin+1],thetamin,thetamax))
-  fig, ax = mpl.subplots()
-  ax.bar(energyBins[:-1],Is,binWidth,label=r"$\theta$ = 0 to 5 deg".format(0,5))
-  ax.plot(energyBins[1:],3e-3*lowEnergyVerticalParameterization(energyBins[1:]),"c-",lw=3)
+  fig, ax = mpl.subplots(figsize=(7,7))
+  ax.bar(energyBins[:-1],Is,binWidth,label="Formula from PDG valid for E > 100 GeV")
+  ax.plot(energyBins[1:],3e-3*lowEnergyVerticalParameterization(energyBins[1:]),"c-",lw=3,label="My parameterization of PDG data")
   ax.set_yscale('linear')
   ax.set_title(r"For $\theta$ = 0 to 5 deg".format(0,5))
   ax.set_xlabel("E [GeV]")
   ax.set_ylabel("I [Hz m$^{{-2}}$ per {0:.1f} GeV]".format(binWidth))
   #ax.set_xlim(1,2000)
   #ax.set_ylim(0.002,0.2)
+  ax.legend()
   fig.savefig("I_10.png")
+  fig.savefig("I_10.pdf")
 
   energyBins = linspace(0.,2.,21)
   binWidth = energyBins[1]-energyBins[0]
