@@ -190,13 +190,15 @@ def findLinePoints(paddle1,paddle2,y=100.):
             dirScaleFactor = (y - p[1])/float(d[1])
             point = [c1[i]+dirScaleFactor*d[i] for i in range(3)]
             result.append(point)
-            angle = abs(numpy.arctan(d[1]/(d[0]**2+d[2]**2)**0.5))
-            angleDeg = angle*180/numpy.pi
-            zenithAngleDeg = 90-angleDeg
-            phi = numpy.arctan2(d[2],d[0])
-            phiDeg = phi*180/numpy.pi
-            print phi, phiDeg
-            angles.append(zenithAngleDeg)
+            theta = numpy.arctan2((d[0]**2+d[2]**2)**0.5,d[1])*180/numpy.pi
+            phi = numpy.arctan2(d[2],d[0])*180/numpy.pi
+            if theta < 90.:
+                theta = 180 - theta
+                phi += 180
+            angle = 180 - theta # want from angle going down
+            
+            angles.append(angle)
+            phis.append(phi)
             xs.append(point[0])
             zs.append(point[2])
             #print "  position: ({:5.1f},{:5.1f},{:5.1f}) zenith angle: {angle:4.1f} deg".format(*point,angle=zenithAngleDeg)
@@ -249,7 +251,7 @@ def eventViewer(tracks,listsOfPoints=[]):
     
     mpl.show()
 
-def genPositions(paddleSets,debugPlots=False,nScaleFactor=0.01):
+def genPositionsAngles(paddleSets,debugPlots=False,nScaleFactor=0.01):
     def genUniformPoints(N,xmin,xmax,ymin,ymax):
         randomPoints = numpy.random.rand(N,2)
         randomPoints[:,0] *= abs(xmax-xmin)
@@ -260,17 +262,25 @@ def genPositions(paddleSets,debugPlots=False,nScaleFactor=0.01):
 
     pointSets = []
     angleSets = []
+    phiSets = []
     convexHulls = []
     delaunays = []
     xExtremas = []
     zExtremas = []
     areas = []
+    thetaExtremas = []
+    thetaWidths = []
+    thetaMids = []
+    phiExtremas = []
+    phiWidths = []
+    phiMids = []
     for paddleSet in paddleSets:
         pointSet, angleSet, phiSet = findLinePoints(*paddleSet)
         convexHull = scipy.spatial.ConvexHull(pointSet[:,[0,2]])
         delaunay = scipy.spatial.Delaunay(pointSet[convexHull.vertices][:,[0,2]])
         pointSets.append(pointSet)
         angleSets.append(angleSet)
+        phiSets.append(phiSet)
         convexHulls.append(convexHull)
         delaunays.append(delaunay)
         xExtrema = [min(pointSet[:,0]),max(pointSet[:,0])]
@@ -279,41 +289,80 @@ def genPositions(paddleSets,debugPlots=False,nScaleFactor=0.01):
         xExtremas.append(xExtrema)
         zExtremas.append(zExtrema)
         areas.append(area)
+        thetaExtrema = [min(angleSet),max(angleSet)]
+        thetaWidth = thetaExtrema[1]-thetaExtrema[0]
+        thetaMid = 0.5*(thetaExtrema[1]+thetaExtrema[0])
+        phiExtrema = [min(phiSet),max(phiSet)]
+        phiWidth = phiExtrema[1]-phiExtrema[0]
+        phiMid = 0.5*(phiExtrema[1]+phiExtrema[0])
+        thetaExtremas.append(thetaExtrema)
+        thetaWidths.append(thetaWidth)
+        thetaMids.append(thetaMid)
+        phiExtremas.append(phiExtrema)
+        phiWidths.append(phiWidth)
+        phiMids.append(phiMid)
+        if debugPlots:
+            print "thetaExtrema: {:3.0f}, {:3.0f} deg".format(*thetaExtrema)
+            print "phiExtrema: {:3.0f}, {:3.0f} deg, mid: {phiMid:5.1f} deg, width: {phiWidth:5.1f} deg".format(*phiExtrema,phiWidth=phiWidth,phiMid=phiMid)
+
+    maxPhiWidth = max(phiWidths)*1.02
+    halfMaxPhiWidth = 0.5*maxPhiWidth
+    maxThetaWidth = max(thetaWidths)*1.02
+    halfMaxThetaWidth = 0.5*maxThetaWidth
 
     result = None
+    resultPhis = None
+    resultThetas = None
     nTries = 2
     for iTry in range(nTries):
-        for delaunay, area, xExtrema, zExtrema in zip(delaunays,areas, xExtremas,zExtremas):
+        for delaunay, area, xExtrema, zExtrema, thetaMid, phiMid in zip(delaunays,areas,xExtremas,zExtremas,thetaMids,phiMids):
             Ntry = int(area*nScaleFactor)
             randomPoints = genUniformPoints(Ntry,xExtrema[0],xExtrema[1],zExtrema[0],zExtrema[1])
             randomPointsInDelaunay = delaunay.find_simplex(randomPoints) >= 0
             randomPoints = randomPoints[randomPointsInDelaunay]
+            randomThetas = numpy.random.rand(len(randomPoints))*maxThetaWidth+thetaMid-halfMaxThetaWidth
+            randomPhis = numpy.random.rand(len(randomPoints))*maxPhiWidth+phiMid-halfMaxPhiWidth
             if result is None:
                 result = randomPoints
+                resultThetas = randomThetas
+                resultPhis = randomPhis
             else:
                 result = numpy.concatenate((result,randomPoints),0)
+                resultThetas = numpy.concatenate((resultThetas,randomThetas),0)
+                resultPhis = numpy.concatenate((resultPhis,randomPhis),0)
 
     if debugPlots:
-        fig, ax = mpl.subplots()
-        ax.set_aspect("equal")
+        fig, (ax1,ax2) = mpl.subplots(2)
+        ax1.set_aspect("equal")
+#        ax2.set_aspect("equal")
         for iColor, points, convexHull in zip(range(len(pointSets)),pointSets,convexHulls):
             for simplex in convexHull.simplices:
-                ax.plot(points[:,[0,2]][simplex,0],points[:,[0,2]][simplex,1],'-'+['r','g','b','k'][iColor])
-            #ax.scatter(points.T[0],points.T[2],c=['r','g','b','k'][iColor])
+                ax1.plot(points[:,[0,2]][simplex,0],points[:,[0,2]][simplex,1],'-'+['r','g','b','k'][iColor])
+            #ax1.scatter(points.T[0],points.T[2],c=['r','g','b','k'][iColor])
 
-        ax.scatter(result[:,0],result[:,1],s=10,c='c',edgecolors='none',cmap="brg")
-        ax.set_xlabel('x [cm]')
-        ax.set_ylabel('z [cm]')
+        ax1.scatter(result[:,0],result[:,1],s=10,c='c',edgecolors='none',cmap="brg")
+        ax1.set_xlabel('x [cm]')
+        ax1.set_ylabel('z [cm]')
+
+        #for phi in resultPhis:
+        #    ax2.axvline(phi,ymax=0.1,c='c')
+        ax2.scatter(resultPhis,resultThetas,s=10,c='c',edgecolors='none')
+        for iColor, angleSet, phiSet in zip(range(len(pointSets)),angleSets,phiSets):
+            ax2.scatter(phiSet,angleSet,s=10,c=['r','g','b','k'][iColor],edgecolors='none')
+        ax2.set_xlabel(r'$\phi_{zx}$ [deg]')
+        ax2.set_ylabel(r'$\theta_z$ [deg]')
+
+
         #fig.savefig("projPoints.png")
         mpl.show()
 
-    return result
+    return result, resultThetas, resultPhis
 
 if __name__ == "__main__":
 
     import sys
 
-    randomPoints = genPositions([[cosmic1,cosmic2],[cosmic3,cosmic4]])
+    randomPoints, randomThetas, randomPhis = genPositionsAngles([[cosmic1,cosmic2],[cosmic3,cosmic4]])
 
     #################################
 
@@ -321,7 +370,7 @@ if __name__ == "__main__":
                 [[-120.,80.,-190.],[1.5,-1.0,2.5]],
                 [[-80.,80.,-190.],[1.,-0.8,2.]],
             ]
-    eventViewer(tracks)
+    #eventViewer(tracks)
 
     
     
