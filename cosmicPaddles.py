@@ -81,43 +81,78 @@ class CosmicPaddle(object):
         result = numpy.logical_and(inXY,inBounds)
         return result
 
-  def plot(self,ax,lc='-b'):
+  def plot(self,ax,lc='-b',swapYZ=False):
 
-    ax.plot3D([self.xminTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmin,self.zmin],lc)
-    ax.plot3D([self.xminTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmax,self.zmax],lc)
+    if swapYZ:
+        ax.plot3D([self.xminTop,self.xmaxTop],[self.zmin,self.zmin],[self.ymax,self.ymax],lc)
+        ax.plot3D([self.xminTop,self.xmaxTop],[self.zmax,self.zmax],[self.ymax,self.ymax],lc)
+                                                                                         
+        ax.plot3D([self.xminBot,self.xmaxBot],[self.zmin,self.zmin],[self.ymin,self.ymin],lc)
+        ax.plot3D([self.xminBot,self.xmaxBot],[self.zmax,self.zmax],[self.ymin,self.ymin],lc)
+                                                                                         
+        ax.plot3D([self.xminBot,self.xminTop],[self.zmin,self.zmin],[self.ymin,self.ymax],lc)
+        ax.plot3D([self.xminBot,self.xminTop],[self.zmax,self.zmax],[self.ymin,self.ymax],lc)
+                                                                                         
+        ax.plot3D([self.xmaxBot,self.xmaxTop],[self.zmin,self.zmin],[self.ymin,self.ymax],lc)
+        ax.plot3D([self.xmaxBot,self.xmaxTop],[self.zmax,self.zmax],[self.ymin,self.ymax],lc)
+                                                                                         
+        ax.plot3D([self.xminTop,self.xminTop],[self.zmin,self.zmax],[self.ymax,self.ymax],lc)
+        ax.plot3D([self.xminBot,self.xminBot],[self.zmin,self.zmax],[self.ymin,self.ymin],lc)
+                                                                                         
+        ax.plot3D([self.xmaxTop,self.xmaxTop],[self.zmin,self.zmax],[self.ymax,self.ymax],lc)
+        ax.plot3D([self.xmaxBot,self.xmaxBot],[self.zmin,self.zmax],[self.ymin,self.ymin],lc)
+    else:
+        ax.plot3D([self.xminTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmin,self.zmin],lc)
+        ax.plot3D([self.xminTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmax,self.zmax],lc)
 
-    ax.plot3D([self.xminBot,self.xmaxBot],[self.ymin,self.ymin],[self.zmin,self.zmin],lc)
-    ax.plot3D([self.xminBot,self.xmaxBot],[self.ymin,self.ymin],[self.zmax,self.zmax],lc)
+        ax.plot3D([self.xminBot,self.xmaxBot],[self.ymin,self.ymin],[self.zmin,self.zmin],lc)
+        ax.plot3D([self.xminBot,self.xmaxBot],[self.ymin,self.ymin],[self.zmax,self.zmax],lc)
 
-    ax.plot3D([self.xminBot,self.xminTop],[self.ymin,self.ymax],[self.zmin,self.zmin],lc)
-    ax.plot3D([self.xminBot,self.xminTop],[self.ymin,self.ymax],[self.zmax,self.zmax],lc)
+        ax.plot3D([self.xminBot,self.xminTop],[self.ymin,self.ymax],[self.zmin,self.zmin],lc)
+        ax.plot3D([self.xminBot,self.xminTop],[self.ymin,self.ymax],[self.zmax,self.zmax],lc)
 
-    ax.plot3D([self.xmaxBot,self.xmaxTop],[self.ymin,self.ymax],[self.zmin,self.zmin],lc)
-    ax.plot3D([self.xmaxBot,self.xmaxTop],[self.ymin,self.ymax],[self.zmax,self.zmax],lc)
+        ax.plot3D([self.xmaxBot,self.xmaxTop],[self.ymin,self.ymax],[self.zmin,self.zmin],lc)
+        ax.plot3D([self.xmaxBot,self.xmaxTop],[self.ymin,self.ymax],[self.zmax,self.zmax],lc)
 
-    ax.plot3D([self.xminTop,self.xminTop],[self.ymax,self.ymax],[self.zmin,self.zmax],lc)
-    ax.plot3D([self.xminBot,self.xminBot],[self.ymin,self.ymin],[self.zmin,self.zmax],lc)
+        ax.plot3D([self.xminTop,self.xminTop],[self.ymax,self.ymax],[self.zmin,self.zmax],lc)
+        ax.plot3D([self.xminBot,self.xminBot],[self.ymin,self.ymin],[self.zmin,self.zmax],lc)
 
-    ax.plot3D([self.xmaxTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmin,self.zmax],lc)
-    ax.plot3D([self.xmaxBot,self.xmaxBot],[self.ymin,self.ymin],[self.zmin,self.zmax],lc)
+        ax.plot3D([self.xmaxTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmin,self.zmax],lc)
+        ax.plot3D([self.xmaxBot,self.xmaxBot],[self.ymin,self.ymin],[self.zmin,self.zmax],lc)
 
-def plotRectangle(ax,xmin,xmax,ymin,ymax,zmin,zmax,lc='-g'):
-    ax.plot3D([xmin,xmin],[ymin,ymin],[zmin,zmax],lc)
-    ax.plot3D([xmin,xmin],[ymax,ymax],[zmin,zmax],lc)
-    ax.plot3D([xmax,xmax],[ymin,ymin],[zmin,zmax],lc)
-    ax.plot3D([xmax,xmax],[ymax,ymax],[zmin,zmax],lc)
+def plotRectangle(ax,xmin,xmax,ymin,ymax,zmin,zmax,lc='-g',swapYZ=False):
+    if swapYZ:
+        ax.plot3D([xmin,xmin],[zmin,zmax],[ymin,ymin],lc)
+        ax.plot3D([xmin,xmin],[zmin,zmax],[ymax,ymax],lc)
+        ax.plot3D([xmax,xmax],[zmin,zmax],[ymin,ymin],lc)
+        ax.plot3D([xmax,xmax],[zmin,zmax],[ymax,ymax],lc)
+                                                     
+        ax.plot3D([xmin,xmin],[zmin,zmin],[ymin,ymax],lc)
+        ax.plot3D([xmin,xmin],[zmax,zmax],[ymin,ymax],lc)
+        ax.plot3D([xmax,xmax],[zmin,zmin],[ymin,ymax],lc)
+        ax.plot3D([xmax,xmax],[zmax,zmax],[ymin,ymax],lc)
+                                                     
+        ax.plot3D([xmin,xmax],[zmin,zmin],[ymin,ymin],lc)
+        ax.plot3D([xmin,xmax],[zmax,zmax],[ymin,ymin],lc)
+        ax.plot3D([xmin,xmax],[zmin,zmin],[ymax,ymax],lc)
+        ax.plot3D([xmin,xmax],[zmax,zmax],[ymax,ymax],lc)
+    else:
+        ax.plot3D([xmin,xmin],[ymin,ymin],[zmin,zmax],lc)
+        ax.plot3D([xmin,xmin],[ymax,ymax],[zmin,zmax],lc)
+        ax.plot3D([xmax,xmax],[ymin,ymin],[zmin,zmax],lc)
+        ax.plot3D([xmax,xmax],[ymax,ymax],[zmin,zmax],lc)
 
-    ax.plot3D([xmin,xmin],[ymin,ymax],[zmin,zmin],lc)
-    ax.plot3D([xmin,xmin],[ymin,ymax],[zmax,zmax],lc)
-    ax.plot3D([xmax,xmax],[ymin,ymax],[zmin,zmin],lc)
-    ax.plot3D([xmax,xmax],[ymin,ymax],[zmax,zmax],lc)
+        ax.plot3D([xmin,xmin],[ymin,ymax],[zmin,zmin],lc)
+        ax.plot3D([xmin,xmin],[ymin,ymax],[zmax,zmax],lc)
+        ax.plot3D([xmax,xmax],[ymin,ymax],[zmin,zmin],lc)
+        ax.plot3D([xmax,xmax],[ymin,ymax],[zmax,zmax],lc)
 
-    ax.plot3D([xmin,xmax],[ymin,ymin],[zmin,zmin],lc)
-    ax.plot3D([xmin,xmax],[ymin,ymin],[zmax,zmax],lc)
-    ax.plot3D([xmin,xmax],[ymax,ymax],[zmin,zmin],lc)
-    ax.plot3D([xmin,xmax],[ymax,ymax],[zmax,zmax],lc)
+        ax.plot3D([xmin,xmax],[ymin,ymin],[zmin,zmin],lc)
+        ax.plot3D([xmin,xmax],[ymin,ymin],[zmax,zmax],lc)
+        ax.plot3D([xmin,xmax],[ymax,ymax],[zmin,zmin],lc)
+        ax.plot3D([xmin,xmax],[ymax,ymax],[zmax,zmax],lc)
 
-def plotTrack(ax,position,direction,lc='-r'):
+def plotTrack(ax,position,direction,lc='-r',swapYZ=False):
     def inBoundaries(x,y,z):
         if x > 150. or x < -150.:
           return False
@@ -135,13 +170,17 @@ def plotTrack(ax,position,direction,lc='-r'):
         endPos = [position[i] + dirScaleFactor*direction[i] for i in range(3)]
         if dirScaleFactor > 0 and inBoundaries(*endPos):
             break
-    ax.plot3D([position[0],endPos[0]],[position[1],endPos[1]],[position[2],endPos[2]],lc)
+    if swapYZ:
+        ax.plot3D([position[0],endPos[0]],[position[2],endPos[2]],[position[1],endPos[1]],lc)
+    else:
+        ax.plot3D([position[0],endPos[0]],[position[1],endPos[1]],[position[2],endPos[2]],lc)
 
 def findLinePoints(paddle1,paddle2,y=100.):
     corners1 = paddle1.getCorners()
     corners2 = paddle2.getCorners()
     result = []
     angles = []
+    phis = []
     xs = []
     zs = []
     for c1 in corners1:
@@ -154,6 +193,9 @@ def findLinePoints(paddle1,paddle2,y=100.):
             angle = abs(numpy.arctan(d[1]/(d[0]**2+d[2]**2)**0.5))
             angleDeg = angle*180/numpy.pi
             zenithAngleDeg = 90-angleDeg
+            phi = numpy.arctan2(d[2],d[0])
+            phiDeg = phi*180/numpy.pi
+            print phi, phiDeg
             angles.append(zenithAngleDeg)
             xs.append(point[0])
             zs.append(point[2])
@@ -161,7 +203,7 @@ def findLinePoints(paddle1,paddle2,y=100.):
 
     #print("  xmin/max: {:5.1f},{:5.1f} zmin/max: {:5.1f},{:5.1f} angle min/max: {:5.1f},{:5.1f}".format(
     #                                    min(xs),max(xs),min(zs),max(zs),min(angles),max(angles)))
-    return numpy.array(result), numpy.array(angles)
+    return numpy.array(result), numpy.array(angles), numpy.array(phis)
 
 
 #,xmin Top [cm],xmax Top [cm],xmin Bottom [cm],xmax Bottom [cm],ymin [cm],ymax [cm],zmin [cm],zmax [cm]
@@ -185,33 +227,25 @@ def eventViewer(tracks,listsOfPoints=[]):
     ax = fig.add_subplot(111, projection='3d')
     ax.set_aspect("equal")
     
-    #xs = [paddle.getMid()[0] for paddle in paddles]
-    #ys = [paddle.getMid()[1] for paddle in paddles]
-    #zs = [paddle.getMid()[2] for paddle in paddles]
-    #ax.scatter(xs, ys, zs, c='r', marker='o')
-
     for iPaddle, paddle in enumerate(paddles):
-      paddle.plot(ax,['c','m','y','k'][iPaddle])
+      paddle.plot(ax,['c','m','y','k'][iPaddle],swapYZ=True)
     
-    #plotRectangle(ax,*tpcBoundaries)
-    plotRectangle(ax,*tpcActiveBoundaries,lc='b')
+    plotRectangle(ax,*tpcBoundaries,swapYZ=True)
+    plotRectangle(ax,*tpcActiveBoundaries,lc='b',swapYZ=True)
 
-    #for i in range(len(tracks)):
-    #    s = (sum([j**2 for j in tracks[i][1] ]))**0.5
-    #    print(s)
-    #    tracks[i][1] = [j/s for j in tracks[i][1]]
     for itrk, track in enumerate(tracks):
         print("Track: {:2d}".format(itrk))
-        plotTrack(ax,track[0],track[1])
+        plotTrack(ax,track[0],track[1], swapYZ=True)
         for ipad, paddle in enumerate(paddles):
             print("  {:2d} {}".format(ipad,paddle.checkWentThrough(*track,fast=True)))
 
     for iList, listOfPoints in enumerate(listsOfPoints):
-        ax.scatter(*(listOfPoints.T), c=['r','g','b','k','o'][iList], marker='x')
+        ax.scatter(listOfPoints[:,0],listOfPoints[:,2],listOfPoints[:,1], c=['r','g','b','k','o'][iList], marker='x')
     
+    ax.invert_xaxis()
     ax.set_xlabel('x [cm]')
-    ax.set_ylabel('y [cm]')
-    ax.set_zlabel('z [cm]')
+    ax.set_ylabel('z [cm]')
+    ax.set_zlabel('y [cm]')
     
     mpl.show()
 
@@ -232,7 +266,7 @@ def genPositions(paddleSets,debugPlots=False,nScaleFactor=0.01):
     zExtremas = []
     areas = []
     for paddleSet in paddleSets:
-        pointSet, angleSet = findLinePoints(*paddleSet)
+        pointSet, angleSet, phiSet = findLinePoints(*paddleSet)
         convexHull = scipy.spatial.ConvexHull(pointSet[:,[0,2]])
         delaunay = scipy.spatial.Delaunay(pointSet[convexHull.vertices][:,[0,2]])
         pointSets.append(pointSet)
@@ -283,11 +317,11 @@ if __name__ == "__main__":
 
     #################################
 
-    #tracks = [
-    #            [[-120.,80.,-190.],[1.5,-1.0,2.5]],
-    #            [[-80.,80.,-190.],[1.,-0.8,2.]],
-    #        ]
-    #eventViewer(tracks,[points12,points34])
+    tracks = [
+                [[-120.,80.,-190.],[1.5,-1.0,2.5]],
+                [[-80.,80.,-190.],[1.,-0.8,2.]],
+            ]
+    eventViewer(tracks)
 
     
     
