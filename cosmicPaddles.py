@@ -157,10 +157,10 @@ def findLinePoints(paddle1,paddle2,y=100.):
             angles.append(zenithAngleDeg)
             xs.append(point[0])
             zs.append(point[2])
-            print "  position: ({:5.1f},{:5.1f},{:5.1f}) zenith angle: {angle:4.1f} deg".format(*point,angle=zenithAngleDeg)
+            #print "  position: ({:5.1f},{:5.1f},{:5.1f}) zenith angle: {angle:4.1f} deg".format(*point,angle=zenithAngleDeg)
 
-    print("  xmin/max: {:5.1f},{:5.1f} zmin/max: {:5.1f},{:5.1f} angle min/max: {:5.1f},{:5.1f}".format(
-                                        min(xs),max(xs),min(zs),max(zs),min(angles),max(angles)))
+    #print("  xmin/max: {:5.1f},{:5.1f} zmin/max: {:5.1f},{:5.1f} angle min/max: {:5.1f},{:5.1f}".format(
+    #                                    min(xs),max(xs),min(zs),max(zs),min(angles),max(angles)))
     return numpy.array(result), numpy.array(angles)
 
 
@@ -215,55 +215,71 @@ def eventViewer(tracks,listsOfPoints=[]):
     
     mpl.show()
 
+def genPositions(paddleSets,debugPlots=False,nScaleFactor=0.01):
+    def genUniformPoints(N,xmin,xmax,ymin,ymax):
+        randomPoints = numpy.random.rand(N,2)
+        randomPoints[:,0] *= abs(xmax-xmin)
+        randomPoints[:,1] *= abs(ymax-ymin)
+        randomPoints[:,0] += xmin
+        randomPoints[:,1] += ymin
+        return randomPoints
+
+    pointSets = []
+    angleSets = []
+    convexHulls = []
+    delaunays = []
+    xExtremas = []
+    zExtremas = []
+    areas = []
+    for paddleSet in paddleSets:
+        pointSet, angleSet = findLinePoints(*paddleSet)
+        convexHull = scipy.spatial.ConvexHull(pointSet[:,[0,2]])
+        delaunay = scipy.spatial.Delaunay(pointSet[convexHull.vertices][:,[0,2]])
+        pointSets.append(pointSet)
+        angleSets.append(angleSet)
+        convexHulls.append(convexHull)
+        delaunays.append(delaunay)
+        xExtrema = [min(pointSet[:,0]),max(pointSet[:,0])]
+        zExtrema = [min(pointSet[:,2]),max(pointSet[:,2])]
+        area = abs(xExtrema[0]-xExtrema[1])*abs(zExtrema[0]-zExtrema[1])
+        xExtremas.append(xExtrema)
+        zExtremas.append(zExtrema)
+        areas.append(area)
+
+    result = None
+    nTries = 2
+    for iTry in range(nTries):
+        for delaunay, area, xExtrema, zExtrema in zip(delaunays,areas, xExtremas,zExtremas):
+            Ntry = int(area*nScaleFactor)
+            randomPoints = genUniformPoints(Ntry,xExtrema[0],xExtrema[1],zExtrema[0],zExtrema[1])
+            randomPointsInDelaunay = delaunay.find_simplex(randomPoints) >= 0
+            randomPoints = randomPoints[randomPointsInDelaunay]
+            if result is None:
+                result = randomPoints
+            else:
+                result = numpy.concatenate((result,randomPoints),0)
+
+    if debugPlots:
+        fig, ax = mpl.subplots()
+        ax.set_aspect("equal")
+        for iColor, points, convexHull in zip(range(len(pointSets)),pointSets,convexHulls):
+            for simplex in convexHull.simplices:
+                ax.plot(points[:,[0,2]][simplex,0],points[:,[0,2]][simplex,1],'-'+['r','g','b','k'][iColor])
+            #ax.scatter(points.T[0],points.T[2],c=['r','g','b','k'][iColor])
+
+        ax.scatter(result[:,0],result[:,1],s=10,c='c',edgecolors='none',cmap="brg")
+        ax.set_xlabel('x [cm]')
+        ax.set_ylabel('z [cm]')
+        #fig.savefig("projPoints.png")
+        mpl.show()
+
+    return result
+
 if __name__ == "__main__":
 
     import sys
 
-    print "Paddles 1 and 2"
-    points12, angles12 = findLinePoints(cosmic1,cosmic2)
-    print "Paddles 3 and 4"
-    points34, angles34 = findLinePoints(cosmic3,cosmic4)
-
-    chull12 = scipy.spatial.ConvexHull(points12[:,[0,2]])
-    chull34 = scipy.spatial.ConvexHull(points34[:,[0,2]])
-    delaunay12 = scipy.spatial.Delaunay(points12[chull12.vertices][:,[0,2]])
-    delaunay34 = scipy.spatial.Delaunay(points34[chull34.vertices][:,[0,2]])
-
-    zmin12 = min(points12[:,2])
-    zmax12 = max(points12[:,2])
-    zmin34 = min(points34[:,2])
-    zmax34 = max(points34[:,2])
-
-    randomPoints = numpy.random.rand(1000,2)
-    randomPoints[:,0] *= 400+500
-    randomPoints[:,1] *= 800+600
-    randomPoints[:,0] += -500
-    randomPoints[:,1] += -800
-
-    randomPointsIn12 = delaunay12.find_simplex(randomPoints) >= 0
-    randomPointsIn34 = delaunay34.find_simplex(randomPoints) >= 0
-    randomPointsColors = numpy.ones(randomPoints.shape[0])
-    randomPointsColors[randomPointsIn12] = 0.
-    randomPointsColors[randomPointsIn34] = 2.
-    print "total: ", randomPointsIn12.shape[0]
-
-    fig, ax = mpl.subplots()
-    ax.set_aspect("equal")
-    for simplex in chull12.simplices:
-        ax.plot(points12[:,[0,2]][simplex,0],points12[:,[0,2]][simplex,1],'-r')
-    print("Chull12 vertices: {}".format(chull12.vertices))
-    #ax.scatter(points12.T[0],points12.T[2],c='r')
-    for simplex in chull34.simplices:
-        ax.plot(points34[:,[0,2]][simplex,0],points34[:,[0,2]][simplex,1],'-g')
-    print("Chull34 vertices: {}".format(chull34.vertices))
-    #ax.scatter(points34.T[0],points34.T[2],c='g')
-
-    ax.scatter(randomPoints[:,0],randomPoints[:,1],s=10,c=randomPointsColors,edgecolors='none',cmap="brg")
-    ax.set_xlabel('x [cm]')
-    ax.set_ylabel('z [cm]')
-    fig.savefig("projPoints.png")
-    mpl.show()
-    del fig
+    randomPoints = genPositions([[cosmic1,cosmic2],[cosmic3,cosmic4]])
 
     #################################
 
