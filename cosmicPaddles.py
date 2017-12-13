@@ -226,15 +226,8 @@ if __name__ == "__main__":
 
     chull12 = scipy.spatial.ConvexHull(points12[:,[0,2]])
     chull34 = scipy.spatial.ConvexHull(points34[:,[0,2]])
-
-    simplexes12 = []
-    for simplex in chull12.simplices:
-        zs = points12[:,2][simplex]
-        dz = abs(zs[1] - zs[0])
-        if dz > 100:
-            simplexes12.append(points12[simplex])
-
-    sys.exit(0)
+    delaunay12 = scipy.spatial.Delaunay(points12[chull12.vertices][:,[0,2]])
+    delaunay34 = scipy.spatial.Delaunay(points34[chull34.vertices][:,[0,2]])
 
     zmin12 = min(points12[:,2])
     zmax12 = max(points12[:,2])
@@ -247,6 +240,13 @@ if __name__ == "__main__":
     randomPoints[:,0] += -500
     randomPoints[:,1] += -800
 
+    randomPointsIn12 = delaunay12.find_simplex(randomPoints) >= 0
+    randomPointsIn34 = delaunay34.find_simplex(randomPoints) >= 0
+    randomPointsColors = numpy.ones(randomPoints.shape[0])
+    randomPointsColors[randomPointsIn12] = 0.
+    randomPointsColors[randomPointsIn34] = 2.
+    print "total: ", randomPointsIn12.shape[0]
+
     fig, ax = mpl.subplots()
     ax.set_aspect("equal")
     for simplex in chull12.simplices:
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     print("Chull34 vertices: {}".format(chull34.vertices))
     #ax.scatter(points34.T[0],points34.T[2],c='g')
 
-    ax.scatter(randomPoints[:,0],randomPoints[:,1],s=0.5,c='k')
+    ax.scatter(randomPoints[:,0],randomPoints[:,1],s=10,c=randomPointsColors,edgecolors='none',cmap="brg")
     ax.set_xlabel('x [cm]')
     ax.set_ylabel('z [cm]')
     fig.savefig("projPoints.png")
