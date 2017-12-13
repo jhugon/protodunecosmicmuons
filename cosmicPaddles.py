@@ -58,6 +58,23 @@ class CosmicPaddle(object):
                 return True
     return False
 
+  def checkWentThroughArray(self,x,y,z,px,py,pz,fast=False):
+    dirScaleFactor = (self.zmid - z) / pz
+    thisx = x + dirScaleFactor * px
+    thisy = y + dirScaleFactor * py
+
+    inX = numpy.logical_and(thisx > self.xmin, thisx < self.xmax)
+    inY = numpy.logical_and(thisy > self.ymin, thisy < self.ymax)
+    inXY = numpy.logical_and(inX,inY)
+    if fast:
+        return inXY
+    else:
+        xmaxBoundYmin = thisx * self.xmaxSlope + self.xmaxYIntercept
+        xminBoundYmin = thisx * self.xminSlope + self.xminYIntercept
+        inBounds = numpy.logical_and(thisy > xmaxBoundYmin, thisy > xminBoundYmin)
+        result = numpy.logical_and(inXY,inBounds)
+        return result
+
   def plot(self,ax,lc='-b'):
 
     ax.plot3D([self.xminTop,self.xmaxTop],[self.ymax,self.ymax],[self.zmin,self.zmin],lc)
@@ -128,7 +145,7 @@ def findLinePoints(paddle1,paddle2,y=100.):
             dirScaleFactor = (y - p[1])/float(d[1])
             point = [c1[i]+dirScaleFactor*d[i] for i in range(3)]
             result.append(point)
-            angle = numpy.arctan(d[1]/(d[0]**2+d[2]**2)**0.5)
+            angle = abs(numpy.arctan(d[1]/(d[0]**2+d[2]**2)**0.5))
             angleDeg = angle*180/numpy.pi
             zenithAngleDeg = 90-angleDeg
             angles.append(zenithAngleDeg)
@@ -160,52 +177,12 @@ tpcActiveBoundaries = [0.4,47.9,-20,20,0,90]
 
 if __name__ == "__main__":
 
-
-    """
-    ymax12 = abs(cosmic1.ymax - cosmic2.ymin)
-    ymin12 = abs(cosmic1.ymin - cosmic2.ymax)
-    if ymax12 < ymin12:
-        tmp = ymax12
-        ymax12 = ymin12
-        ymin12 = tmp
-    z12 = abs(cosmic1.zmin - cosmic2.zmin)
-    x12 = abs(cosmic1.xmid - cosmic2.xmid)
-    xz12 = (z12**2+x12**2)**0.5
-    print "1,2 y extrema: {:5.1f} {:5.1f} {} {} {}".format(ymax12,ymin12,x12,z12,xz12)
-    slopemax12 = ymax12/xz12
-    slopemin12 = ymin12/xz12
-    anglemax12 = numpy.arctan(slopemax12)*180/numpy.pi
-    anglemin12 = numpy.arctan(slopemin12)*180/numpy.pi
-    zenithanglemin12 = 90-anglemin12
-    zenithanglemax12 = 90-anglemax12
-    print "1,2 max: {:5.1f} {:5.1f} deg, zenith: {:5.1f} deg".format(slopemax12,anglemax12,zenithanglemax12)
-    print "1,2 min: {:5.1f} {:5.1f} deg, zenith: {:5.1f} deg".format(slopemin12,anglemin12,zenithanglemin12)
-
-    ymax34 = abs(cosmic3.ymax - cosmic4.ymin)
-    ymin34 = abs(cosmic3.ymin - cosmic4.ymax)
-    if ymax34 < ymin34:
-        tmp = ymax34
-        ymax34 = ymin34
-        ymin34 = tmp
-    z34 = abs(cosmic3.zmin - cosmic4.zmin)
-    x34 = abs(cosmic3.xmid - cosmic4.xmid)
-    xz34 = (z34**2+x34**2)**0.5
-    print "3,4 y extrema: {:5.1f} {:5.1f} {} {} {}".format(ymax34,ymin34,x34,z34,xz34)
-    slopemax34 = ymax34/xz34
-    slopemin34 = ymin34/xz34
-    anglemax34 = numpy.arctan(slopemax34)*180/numpy.pi
-    anglemin34 = numpy.arctan(slopemin34)*180/numpy.pi
-    zenithanglemin34 = 90-anglemin34
-    zenithanglemax34 = 90-anglemax34
-    print "3,4 max: {:5.1f} {:5.1f} deg, zenith: {:5.1f} deg".format(slopemax34,anglemax34,zenithanglemax34)
-    print "3,4 min: {:5.1f} {:5.1f} deg, zenith: {:5.1f} deg".format(slopemin34,anglemin34,zenithanglemin34)
-    """
-
     print "Paddles 1 and 2"
     findLinePoints(cosmic1,cosmic2)
     print "Paddles 3 and 4"
     findLinePoints(cosmic3,cosmic4)
 
+    ################################
 
     fig = mpl.figure()
     ax = fig.add_subplot(111, projection='3d')

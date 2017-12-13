@@ -4,6 +4,7 @@ import math
 from scipy import *
 from scipy.special import erf
 from scipy.integrate import dblquad
+import cosmicPaddles
 
 MUONMASS = 0.1134289267
 
@@ -157,43 +158,87 @@ class Muon(object):
     result += " {p.px} {p.py} {p.pz} {p.e} {mass} {p.x} {p.y} {p.z} {p.t}".format(p=self,mass=MUONMASS)
     return result
 
-def sample(N,emin,emax,thetamin,thetamax,xmin,xmax,ymin,ymax,zmin,zmax):
+def sample(N,emin,emax):
   """
   args:
     N: n events to generate
     emin, emax: muon energy bounds in GeV
-    thetamin,thetamax: azimuthal angle bounds in rad
-    xmin,xmax: min and max x positions in cm
-    ymin,ymax: min and max y positions in cm
-    zmin,zmax: min and max z positions in cm
   returns:
     muons: list of muon objects
     rateEstimate: rate estimate in Hz
   """
+
+  thetamin = 55*pi/180.
+  thetamax = 85*pi/180.
+
+  ymin = 200.
+
+  xmin1 = 80.
+  xmax1 = 330.
+  zmin1 = 180.
+  zmax1 = 510
+
+  area1 = (xmax1-xmin1)*(zmax1-zmin1)
+
+  xmin2 = -455
+  xmax2 = -48
+  zmin2 = -735
+  zmax2 = -133
+
+  area2 = (xmax2-xmin2)*(zmax2-zmin2)
+
+  areaTotal = area1 + area2
+
+  area1Frac = float(area1) / (area1 + area2)
+  print "Area 1: {:.1f} cm2 Area 2: {:.1f} cm2 Area 1 frac of total: {:.3f}, area total: {:.1f} cm2".format(area1,area2,area1Frac,areaTotal)
+
   m = MUONMASS
   assert(emin>=m)
   energies, thetas, integralEstimate = mcInt(N,emin,emax,thetamin,thetamax)
   print ("Flux: {0:.3f} Hz cm^-2".format(integralEstimate))
-  rateEstimate = integralEstimate*(xmax-xmin)*(zmax-zmin)
-  xs = rand(N)*(xmax-xmin) + xmin
+  rateEstimate = integralEstimate*areaTotal
+
+  # decide if in area1 or area2:
+  isArea1 = ( rand(N) < area1Frac )
+
+  xs = rand(N)*(xmax2-xmin2) + xmin2
   ys = ones(N)*ymin
-  if ymax != ymin:
-    ys = rand(N)*(ymax-ymin) + ymin
-  zs = rand(N)*(zmax-zmin) + zmin
+  zs = rand(N)*(zmax2-zmin2) + zmin2
   ts = zeros(N)
+
+  xs[isArea1] = rand(N)[isArea1]*(xmax1-xmin1) + xmin1
+  zs[isArea1] = rand(N)[isArea1]*(zmax1-zmin1) + zmin1
+
+  phis = rand(N)*2*math.pi - math.pi
 
   p2s = energies**2 - m**2
   ps = sqrt(p2s)
-
-  phis = rand(N)*2*math.pi - math.pi
 
   pys = -ps*cos(thetas)
   pxzs = ps*sin(thetas)
   pxs = pxzs*cos(phis)
   pzs = pxzs*sin(phis)
 
+  # this is where we check if went in paddles
+  wentThrough1 = cosmicPaddles.cosmic1.checkWentThroughArray(xs,ys,zs,pxs,pys,pzs,fast=True)
+  wentThrough2 = cosmicPaddles.cosmic2.checkWentThroughArray(xs,ys,zs,pxs,pys,pzs,fast=True)
+  wentThrough3 = cosmicPaddles.cosmic3.checkWentThroughArray(xs,ys,zs,pxs,pys,pzs,fast=True)
+  wentThrough4 = cosmicPaddles.cosmic4.checkWentThroughArray(xs,ys,zs,pxs,pys,pzs,fast=True)
+
+  triggered = logical_or(logical_and(wentThrough1,wentThrough2),logical_and(wentThrough3,wentThrough4))
+
+  xs = xs[triggered]
+  print("N tries: {} N triggered: {} Fraction: {}".format(len(ys),len(xs),float(len(xs))/len(ys)))
+  ys = ys[triggered]
+  zs = zs[triggered]
+  ts = ts[triggered]
+  pxs = pxs[triggered]
+  pys = pys[triggered]
+  pzs = pzs[triggered]
+  energies = energies[triggered]
+
   particles = []
-  for i in range(N):
+  for i in range(len(xs)):
     tmp = Muon(xs[i],ys[i],zs[i],ts[i],pxs[i],pys[i],pzs[i],energies[i])
     particles.append(tmp)
   return particles, rateEstimate
@@ -204,15 +249,7 @@ if __name__ == "__main__":
   import argparse
 
   minenergy_default = MUONMASS
-  maxenergy_default = 1000.
-  mintheta_default = 0.
-  maxtheta_default = 90.
-  minx_default = -360#-10
-  maxx_default = 360#+10
-  minz_default = -0.5#-100.
-  maxz_default = 695#+100.
-  miny_default = 0.
-  maxy_default = 607.5
+  maxenergy_default = 100.
 
   parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
   parser.add_argument('outfilename',
@@ -226,30 +263,6 @@ if __name__ == "__main__":
   parser.add_argument('--maxenergy', type=float,
                       default=maxenergy_default,
                       help='Maximum energy [GeV], default={0}'.format(maxenergy_default))
-  parser.add_argument('--mintheta', type=float,
-                      default=mintheta_default,
-                      help='Minimum zenith angle [degrees], default={0}'.format(mintheta_default))
-  parser.add_argument('--maxtheta', type=float,
-                      default=maxtheta_default,
-                      help='Maximum zenith angle [degrees], default={0}'.format(maxtheta_default))
-  parser.add_argument('--minx', type=float,
-                      default=minx_default,
-                      help='Minimum intial x coordinate [cm], default={0}'.format(minx_default))
-  parser.add_argument('--maxx', type=float,
-                      default=maxx_default,
-                      help='Maximum intial x coordinate [cm], default={0}'.format(maxx_default))
-  parser.add_argument('--miny', type=float,
-                      default=miny_default,
-                      help='Minimum intial y coordinate [cm], default={0}'.format(miny_default))
-  parser.add_argument('--maxy', type=float,
-                      default=maxy_default,
-                      help='Maximum intial y coordinate [cm], default={0}'.format(maxy_default))
-  parser.add_argument('--minz', type=float,
-                      default=minz_default,
-                      help='Minimum intial z coordinate [cm], default={0}'.format(minz_default))
-  parser.add_argument('--maxz', type=float,
-                      default=maxz_default,
-                      help='Maximum intial z coordinate [cm], default={0}'.format(maxz_default))
   parser.add_argument('--diagnostics','-d', action="store_true",
                       help='Make diagnostic plots')
   parser.add_argument('--debug','-D', action="store_true",
@@ -262,11 +275,7 @@ if __name__ == "__main__":
 
   print "N events:     {0:9}".format(args.nEvents)
   print "Energy range: {0:9.3f} to {1:9.3f} GeV".format(args.minenergy,args.maxenergy)
-  print "Theta range:  {0:9.2f} to {1:9.2f} degrees".format(args.mintheta,args.maxtheta)
-  print "x range:      {0:9.2f} to {1:9.2f} cm".format(args.minx,args.maxx)
-  print "y range:      {0:9.2f} to {1:9.2f} cm".format(args.miny,args.maxy)
-  print "z range:      {0:9.2f} to {1:9.2f} cm".format(args.minz,args.maxz)
-  muons, rateEst = sample(args.nEvents,args.minenergy,args.maxenergy,args.mintheta*math.pi/180,args.maxtheta*math.pi/180,args.minx,args.maxx,args.miny,args.maxy,args.minz,args.maxz)
+  muons, rateEst = sample(args.nEvents,args.minenergy,args.maxenergy)
   print "Rate: {0} Hz".format(rateEst)
   print "Outputing HEPEVT file '{0}'".format(args.outfilename)
   with open(args.outfilename,'w') as outfile:
