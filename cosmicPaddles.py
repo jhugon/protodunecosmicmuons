@@ -158,6 +158,7 @@ def findLinePoints(paddle1,paddle2,y=100.):
     return result
     return angles
 
+
 #,xmin Top [cm],xmax Top [cm],xmin Bottom [cm],xmax Bottom [cm],ymin [cm],ymax [cm],zmin [cm],zmax [cm]
 Bounds_Cosmic10x1 = [-80.4911,-48.2911,-77.7411,-51.0411,-108.9835,-47.9835,-131.502,-128.482]
 Bounds_Cosmic20x1 = [70.9371,103.1371,73.6871,100.3871,17.2977,78.2977,152.904,155.924]
@@ -174,16 +175,7 @@ paddles = [cosmic1,cosmic2,cosmic3,cosmic4]
 tpcBoundaries = [-0.8,49.17,-25,25,-5,95]
 tpcActiveBoundaries = [0.4,47.9,-20,20,0,90]
 
-
-if __name__ == "__main__":
-
-    print "Paddles 1 and 2"
-    findLinePoints(cosmic1,cosmic2)
-    print "Paddles 3 and 4"
-    findLinePoints(cosmic3,cosmic4)
-
-    ################################
-
+def eventViewer(tracks):
     fig = mpl.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.set_aspect("equal")
@@ -199,14 +191,10 @@ if __name__ == "__main__":
     #plotRectangle(ax,*tpcBoundaries)
     plotRectangle(ax,*tpcActiveBoundaries,lc='b')
 
-    tracks = [
-                [[-120.,80.,-190.],[1.5,-1.0,2.5]],
-                [[-80.,80.,-190.],[1.,-0.8,2.]],
-            ]
-    for i in range(len(tracks)):
-        s = (sum([j**2 for j in tracks[i][1] ]))**0.5
-        print(s)
-        tracks[i][1] = [j/s for j in tracks[i][1]]
+    #for i in range(len(tracks)):
+    #    s = (sum([j**2 for j in tracks[i][1] ]))**0.5
+    #    print(s)
+    #    tracks[i][1] = [j/s for j in tracks[i][1]]
     for itrk, track in enumerate(tracks):
         print("Track: {:2d}".format(itrk))
         plotTrack(ax,track[0],track[1])
@@ -219,3 +207,17 @@ if __name__ == "__main__":
     
     mpl.show()
 
+if __name__ == "__main__":
+
+    print "Paddles 1 and 2"
+    findLinePoints(cosmic1,cosmic2)
+    print "Paddles 3 and 4"
+    findLinePoints(cosmic3,cosmic4)
+
+    ################################
+
+    tracks = [
+                [[-120.,80.,-190.],[1.5,-1.0,2.5]],
+                [[-80.,80.,-190.],[1.,-0.8,2.]],
+            ]
+    eventViwer(tracks)

@@ -227,15 +227,15 @@ def sample(N,emin,emax):
 
   triggered = logical_or(logical_and(wentThrough1,wentThrough2),logical_and(wentThrough3,wentThrough4))
 
-  xs = xs[triggered]
-  print("N tries: {} N triggered: {} Fraction: {}".format(len(ys),len(xs),float(len(xs))/len(ys)))
-  ys = ys[triggered]
-  zs = zs[triggered]
-  ts = ts[triggered]
-  pxs = pxs[triggered]
-  pys = pys[triggered]
-  pzs = pzs[triggered]
-  energies = energies[triggered]
+  #xs = xs[triggered]
+  #print("N tries: {} N triggered: {} Fraction: {}".format(len(ys),len(xs),float(len(xs))/len(ys)))
+  #ys = ys[triggered]
+  #zs = zs[triggered]
+  #ts = ts[triggered]
+  #pxs = pxs[triggered]
+  #pys = pys[triggered]
+  #pzs = pzs[triggered]
+  #energies = energies[triggered]
 
   particles = []
   for i in range(len(xs)):
@@ -269,6 +269,8 @@ if __name__ == "__main__":
                       help='Print debug messages')
   parser.add_argument('--roottree','-R', action="store_true",
                       help='Make ROOT Tree')
+  parser.add_argument('--eventviewer','-v', action="store_true",
+                      help='Event viewer on each event')
   
   
   args = parser.parse_args()
@@ -328,3 +330,9 @@ if __name__ == "__main__":
     outfileNameRoot = os.path.splitext(args.outfilename)[0] + ".root"
     print "Outputing ROOT file '{0}' with tree name 'tree'".format(outfileNameRoot)
     makeRootTree(args.outfilename,outfileNameRoot,-1,False)
+
+  if args.eventviewer:
+    print "Starting event viewer!"
+    for iMuon, muon in enumerate(muons):
+      print("Event: ".format(iMuon))
+      cosmicPaddles.eventViewer([[[muon.x,muon.y,muon.z],[muon.px,muon.py,muon.pz]]])
