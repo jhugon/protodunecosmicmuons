@@ -364,12 +364,22 @@ if __name__ == "__main__":
 
     randomPoints, randomThetas, randomPhis = genPositionsAngles([[cosmic1,cosmic2],[cosmic3,cosmic4]])
 
+    pzs = -numpy.cos(randomThetas)
+    pxs = numpy.sin(randomThetas)*numpy.cos(randomPhis)
+    pys = numpy.sin(randomThetas)*numpy.sin(randomPhis)
+
+    tracks = []
+    for randomPoint, px, py, pz in zip(randomPoints,pxs,pys,pzs):
+        track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
+        eventViewer([track])
+        tracks.append(track)
+
     #################################
 
-    tracks = [
-                [[-120.,80.,-190.],[1.5,-1.0,2.5]],
-                [[-80.,80.,-190.],[1.,-0.8,2.]],
-            ]
+    #tracks = [
+    #            [[-120.,80.,-190.],[1.5,-1.0,2.5]],
+    #            [[-80.,80.,-190.],[1.,-0.8,2.]],
+    #        ]
     #eventViewer(tracks)
 
     
