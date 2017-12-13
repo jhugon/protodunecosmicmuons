@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as mpl
 import numpy
 import random
+import scipy.spatial
 
 class CosmicPaddle(object):
   def __init__(self,bounds):
@@ -34,9 +35,14 @@ class CosmicPaddle(object):
 
   def getCorners(self):
     result = []
-    for x in [self.xmin, self.xmax]:
-        for y in [self.ymin, self.ymax]:
-            result.append([x,y,self.zmid])
+    y = self.ymax
+    for x in [self.xminTop, self.xmaxTop]:
+        for z in [self.zmin,self.zmax]:
+            result.append([x,y,z])
+    y = self.ymin
+    for x in [self.xminBot, self.xmaxBot]:
+        for z in [self.zmin,self.zmax]:
+            result.append([x,y,z])
     return result
 
   def getMid(self):
@@ -155,8 +161,7 @@ def findLinePoints(paddle1,paddle2,y=100.):
 
     print("  xmin/max: {:5.1f},{:5.1f} zmin/max: {:5.1f},{:5.1f} angle min/max: {:5.1f},{:5.1f}".format(
                                         min(xs),max(xs),min(zs),max(zs),min(angles),max(angles)))
-    return result
-    return angles
+    return numpy.array(result), numpy.array(angles)
 
 
 #,xmin Top [cm],xmax Top [cm],xmin Bottom [cm],xmax Bottom [cm],ymin [cm],ymax [cm],zmin [cm],zmax [cm]
@@ -175,7 +180,7 @@ paddles = [cosmic1,cosmic2,cosmic3,cosmic4]
 tpcBoundaries = [-0.8,49.17,-25,25,-5,95]
 tpcActiveBoundaries = [0.4,47.9,-20,20,0,90]
 
-def eventViewer(tracks):
+def eventViewer(tracks,listsOfPoints=[]):
     fig = mpl.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.set_aspect("equal")
@@ -200,6 +205,9 @@ def eventViewer(tracks):
         plotTrack(ax,track[0],track[1])
         for ipad, paddle in enumerate(paddles):
             print("  {:2d} {}".format(ipad,paddle.checkWentThrough(*track,fast=True)))
+
+    for iList, listOfPoints in enumerate(listsOfPoints):
+        ax.scatter(*(listOfPoints.T), c=['r','g','b','k','o'][iList], marker='x')
     
     ax.set_xlabel('x [cm]')
     ax.set_ylabel('y [cm]')
@@ -209,15 +217,61 @@ def eventViewer(tracks):
 
 if __name__ == "__main__":
 
+    import sys
+
     print "Paddles 1 and 2"
-    findLinePoints(cosmic1,cosmic2)
+    points12, angles12 = findLinePoints(cosmic1,cosmic2)
     print "Paddles 3 and 4"
-    findLinePoints(cosmic3,cosmic4)
+    points34, angles34 = findLinePoints(cosmic3,cosmic4)
 
-    ################################
+    chull12 = scipy.spatial.ConvexHull(points12[:,[0,2]])
+    chull34 = scipy.spatial.ConvexHull(points34[:,[0,2]])
 
-    tracks = [
-                [[-120.,80.,-190.],[1.5,-1.0,2.5]],
-                [[-80.,80.,-190.],[1.,-0.8,2.]],
-            ]
-    eventViwer(tracks)
+    simplexes12 = []
+    for simplex in chull12.simplices:
+        zs = points12[:,2][simplex]
+        dz = abs(zs[1] - zs[0])
+        if dz > 100:
+            simplexes12.append(points12[simplex])
+
+    sys.exit(0)
+
+    zmin12 = min(points12[:,2])
+    zmax12 = max(points12[:,2])
+    zmin34 = min(points34[:,2])
+    zmax34 = max(points34[:,2])
+
+    randomPoints = numpy.random.rand(1000,2)
+    randomPoints[:,0] *= 400+500
+    randomPoints[:,1] *= 800+600
+    randomPoints[:,0] += -500
+    randomPoints[:,1] += -800
+
+    fig, ax = mpl.subplots()
+    ax.set_aspect("equal")
+    for simplex in chull12.simplices:
+        ax.plot(points12[:,[0,2]][simplex,0],points12[:,[0,2]][simplex,1],'-r')
+    print("Chull12 vertices: {}".format(chull12.vertices))
+    #ax.scatter(points12.T[0],points12.T[2],c='r')
+    for simplex in chull34.simplices:
+        ax.plot(points34[:,[0,2]][simplex,0],points34[:,[0,2]][simplex,1],'-g')
+    print("Chull34 vertices: {}".format(chull34.vertices))
+    #ax.scatter(points34.T[0],points34.T[2],c='g')
+
+    ax.scatter(randomPoints[:,0],randomPoints[:,1],s=0.5,c='k')
+    ax.set_xlabel('x [cm]')
+    ax.set_ylabel('z [cm]')
+    fig.savefig("projPoints.png")
+    mpl.show()
+    del fig
+
+    #################################
+
+    #tracks = [
+    #            [[-120.,80.,-190.],[1.5,-1.0,2.5]],
+    #            [[-80.,80.,-190.],[1.,-0.8,2.]],
+    #        ]
+    #eventViewer(tracks,[points12,points34])
+
+    
+    
