@@ -240,7 +240,7 @@ paddles = [cosmic1,cosmic2,cosmic3,cosmic4]
 tpcBoundaries = [-0.8,49.17,-25,25,-5,95]
 tpcActiveBoundaries = [0.4,47.9,-20,20,0,90]
 
-def eventViewer(tracks,listsOfPoints=[],verbose=True):
+def eventViewer(tracks,listsOfPoints=[],verbose=False):
     fig = mpl.figure()
     ax = fig.add_subplot(111, projection='3d')
     
@@ -414,18 +414,54 @@ if __name__ == "__main__":
 
     mpl.close('all')
 
+    randomPoints3d = numpy.zeros((randomPoints.shape[0],3))
+    randomPoints3d[:,0] = randomPoints[:,0]
+    randomPoints3d[:,1] = 100
+    randomPoints3d[:,2] = randomPoints[:,1]
+    eventViewer([],listsOfPoints=[randomPoints3d])
+
+    wentThrough1 = cosmic1.checkWentThroughArray(randomPoints3d[:,0],randomPoints3d[:,1],randomPoints3d[:,2],pxs,pys,pzs)
+    wentThrough2 = cosmic2.checkWentThroughArray(randomPoints3d[:,0],randomPoints3d[:,1],randomPoints3d[:,2],pxs,pys,pzs)
+    wentThrough3 = cosmic3.checkWentThroughArray(randomPoints3d[:,0],randomPoints3d[:,1],randomPoints3d[:,2],pxs,pys,pzs)
+    wentThrough4 = cosmic4.checkWentThroughArray(randomPoints3d[:,0],randomPoints3d[:,1],randomPoints3d[:,2],pxs,pys,pzs)
+
+    wentThrough12 = numpy.logical_and(wentThrough1,wentThrough2)
+    wentThrough34 = numpy.logical_and(wentThrough3,wentThrough4)
+
+    print("To go through 12, but not necessarily")
     tracks = []
     for randomPoint, px, py, pz in zip(randomPoints,pxs,pys,pzs)[:20]:
         track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
         tracks.append(track)
     eventViewer(tracks)
 
+    print("Went Through 12")
+    tracks = []
+    for randomPoint, px, py, pz in zip(randomPoints[wentThrough12],pxs[wentThrough12],pys[wentThrough12],pzs[wentThrough12])[:20]:
+        track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
+        tracks.append(track)
+    eventViewer(tracks)
+
+    print("To go through 34, but not necessarily")
     tracks = []
     for randomPoint, px, py, pz in zip(randomPoints,pxs,pys,pzs)[-20:]:
         track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
         tracks.append(track)
     eventViewer(tracks)
 
+    print("Went Through 34")
+    tracks = []
+    for randomPoint, px, py, pz in zip(randomPoints[wentThrough34],pxs[wentThrough34],pys[wentThrough34],pzs[wentThrough34])[:20]:
+        track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
+        tracks.append(track)
+    eventViewer(tracks)
+
+    print("Went Through 4")
+    tracks = []
+    for randomPoint, px, py, pz in zip(randomPoints[wentThrough4],pxs[wentThrough4],pys[wentThrough4],pzs[wentThrough4]):
+        track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
+        tracks.append(track)
+    eventViewer(tracks)
 
     #################################
 
@@ -436,10 +472,4 @@ if __name__ == "__main__":
     #eventViewer(tracks)
 
 
-    randomPoints3d = numpy.zeros((randomPoints.shape[0],3))
-    randomPoints3d[:,0] = randomPoints[:,0]
-    randomPoints3d[:,1] = 100
-    randomPoints3d[:,2] = randomPoints[:,1]
-    eventViewer([],listsOfPoints=[randomPoints3d])
-    
     
