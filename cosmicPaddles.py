@@ -154,18 +154,18 @@ def plotRectangle(ax,xmin,xmax,ymin,ymax,zmin,zmax,lc='-g',swapYZ=False):
 
 def plotTrack(ax,position,direction,lc='-r',swapYZ=False):
     def inBoundaries(x,y,z):
-        if x > 150. or x < -150.:
+        if x > 400.*1.01 or x < -500.*1.01:
           return False
-        if y > 150. or y < -150.:
+        if y > 150.*1.01 or y < -150.*1.01:
           return False
-        if x > 200. or z < -200.:
+        if x > 600.*1.01 or z < -800.*1.01:
           return False
         return True
 
     assert(len(position)==len(direction))
     assert(len(position)==3)
     endPos = [0.,0.,0.]
-    for val,i in [(-150,1),(150,1),(200,2),(-200,2),(150,0),(-150,0)]:
+    for val,i in [(-150,1),(150,1),(600,2),(-800,2),(400,0),(-500,0)]:
         dirScaleFactor = (val - position[i])/float(direction[i])
         endPos = [position[i] + dirScaleFactor*direction[i] for i in range(3)]
         if dirScaleFactor > 0 and inBoundaries(*endPos):
@@ -181,6 +181,8 @@ def findLinePoints(paddle1,paddle2,y=100.):
     result = []
     angles = []
     phis = []
+    thetays = []
+    phizxs = []
     xs = []
     zs = []
     for c1 in corners1:
@@ -196,12 +198,26 @@ def findLinePoints(paddle1,paddle2,y=100.):
                 theta = 180 - theta
                 phi += 180
             angle = 180 - theta # want from angle going down
-            
+
             angles.append(angle)
             phis.append(phi)
             xs.append(point[0])
             zs.append(point[2])
+
+            thetay = numpy.arctan2((d[0]**2+d[2]**2)**0.5,d[1])*180/numpy.pi
+            phizx = numpy.arctan2(d[0],d[2])*180/numpy.pi
+            thetays.append(thetay)
+            phizxs.append(phizx)
+
             #print "  position: ({:5.1f},{:5.1f},{:5.1f}) zenith angle: {angle:4.1f} deg".format(*point,angle=zenithAngleDeg)
+
+    if False:
+        fig, ax1 = mpl.subplots()
+        ax1.scatter(phizxs,thetays,s=10,c='b',edgecolors='none',cmap="brg")
+        ax1.set_xlabel(r'$\phi_{zx}$ [deg]')
+        ax1.set_ylabel(r'$\theta_y$ [deg]')
+        fig.savefig("thetayVphizx.png")
+        fig.savefig("thetayVphizx.pdf")
 
     #print("  xmin/max: {:5.1f},{:5.1f} zmin/max: {:5.1f},{:5.1f} angle min/max: {:5.1f},{:5.1f}".format(
     #                                    min(xs),max(xs),min(zs),max(zs),min(angles),max(angles)))
@@ -224,22 +240,22 @@ paddles = [cosmic1,cosmic2,cosmic3,cosmic4]
 tpcBoundaries = [-0.8,49.17,-25,25,-5,95]
 tpcActiveBoundaries = [0.4,47.9,-20,20,0,90]
 
-def eventViewer(tracks,listsOfPoints=[]):
+def eventViewer(tracks,listsOfPoints=[],verbose=True):
     fig = mpl.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_aspect("equal")
     
     for iPaddle, paddle in enumerate(paddles):
       paddle.plot(ax,['c','m','y','k'][iPaddle],swapYZ=True)
     
     plotRectangle(ax,*tpcBoundaries,swapYZ=True)
-    plotRectangle(ax,*tpcActiveBoundaries,lc='b',swapYZ=True)
+    #plotRectangle(ax,*tpcActiveBoundaries,lc='b',swapYZ=True)
 
     for itrk, track in enumerate(tracks):
-        print("Track: {:2d}".format(itrk))
         plotTrack(ax,track[0],track[1], swapYZ=True)
-        for ipad, paddle in enumerate(paddles):
-            print("  {:2d} {}".format(ipad,paddle.checkWentThrough(*track,fast=True)))
+        if verbose:
+            print("Track: {:2d}".format(itrk))
+            for ipad, paddle in enumerate(paddles):
+                print("  {:2d} {}".format(ipad,paddle.checkWentThrough(*track,fast=True)))
 
     for iList, listOfPoints in enumerate(listsOfPoints):
         ax.scatter(listOfPoints[:,0],listOfPoints[:,2],listOfPoints[:,1], c=['r','g','b','k','o'][iList], marker='x')
@@ -248,7 +264,7 @@ def eventViewer(tracks,listsOfPoints=[]):
     ax.set_xlabel('x [cm]')
     ax.set_ylabel('z [cm]')
     ax.set_zlabel('y [cm]')
-    
+
     mpl.show()
 
 def genPositionsAngles(paddleSets,debugPlots=False,nScaleFactor=0.01):
@@ -349,12 +365,32 @@ def genPositionsAngles(paddleSets,debugPlots=False,nScaleFactor=0.01):
         ax2.scatter(resultPhis,resultThetas,s=10,c='c',edgecolors='none')
         for iColor, angleSet, phiSet in zip(range(len(pointSets)),angleSets,phiSets):
             ax2.scatter(phiSet,angleSet,s=10,c=['r','g','b','k'][iColor],edgecolors='none')
-        ax2.set_xlabel(r'$\phi_{zx}$ [deg]')
-        ax2.set_ylabel(r'$\theta_z$ [deg]')
+        ax2.set_xlabel(r'$\phi_{xz}$ [deg]')
+        ax2.set_ylabel(r'$\theta_{zenith}$ [deg]')
 
+        fig.savefig("thetazenithVPhixz.png")
 
-        #fig.savefig("projPoints.png")
-        mpl.show()
+        fig2, ax3 = mpl.subplots()
+
+        ax3.scatter(90-resultPhis,180-resultThetas,s=10,c='c',edgecolors='none')
+        for iColor, angleSet, phiSet in zip(range(len(pointSets)),angleSets,phiSets):
+            ax3.scatter(90-phiSet,180-angleSet,s=10,c=['r','g','b','k'][iColor],edgecolors='none')
+        ax3.set_xlabel(r'$\phi_{zx}$ [deg]')
+        ax3.set_ylabel(r'$\theta_y$ [deg]')
+        fig2.savefig("thetayVPhizx")
+
+        fig3, ax4 = mpl.subplots()
+
+        for iColor, points, convexHull in zip(range(len(pointSets)),pointSets,convexHulls):
+            for simplex in convexHull.simplices:
+                ax4.plot(points[:,[0,2]][simplex,0],points[:,[0,2]][simplex,1],'-'+['r','g','b','k'][iColor])
+
+        ax4.scatter(result[:,0],result[:,1],s=10,c='c',edgecolors='none',cmap="brg")
+        ax4.set_xlabel('x [cm]')
+        ax4.set_ylabel('z [cm]')
+        fig3.savefig("startzVx.png")
+
+        #mpl.show()
 
     return result, resultThetas, resultPhis
 
@@ -362,17 +398,34 @@ if __name__ == "__main__":
 
     import sys
 
-    randomPoints, randomThetas, randomPhis = genPositionsAngles([[cosmic1,cosmic2],[cosmic3,cosmic4]])
+    randomPoints, randomThetas, randomPhis = genPositionsAngles([[cosmic1,cosmic2],[cosmic3,cosmic4]],debugPlots=True)
 
-    pzs = -numpy.cos(randomThetas)
-    pxs = numpy.sin(randomThetas)*numpy.cos(randomPhis)
-    pys = numpy.sin(randomThetas)*numpy.sin(randomPhis)
+    pys = -numpy.cos(randomThetas*numpy.pi/180.)
+    pxs = numpy.sin(randomThetas*numpy.pi/180.)*numpy.cos(randomPhis*numpy.pi/180.)
+    pzs = numpy.sin(randomThetas*numpy.pi/180.)*numpy.sin(randomPhis*numpy.pi/180.)
+
+    fig, ax = mpl.subplots()
+
+    ax.scatter(randomPhis,randomThetas,s=10,c='m',edgecolors='none',cmap="brg")
+    ax.scatter(numpy.arctan2(pzs,pxs)*180/numpy.pi,numpy.arctan2((pzs**2+pxs**2)**0.5,pys)*180/numpy.pi,s=10,c='c',edgecolors='none',cmap="brg")
+    ax.set_xlabel(r'$\phi_{zx}$ [deg]')
+    ax.set_ylabel(r'$\theta_y$ [deg]')
+    fig.savefig("again.png")
+
+    mpl.close('all')
 
     tracks = []
-    for randomPoint, px, py, pz in zip(randomPoints,pxs,pys,pzs):
+    for randomPoint, px, py, pz in zip(randomPoints,pxs,pys,pzs)[:20]:
         track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
-        eventViewer([track])
         tracks.append(track)
+    eventViewer(tracks)
+
+    tracks = []
+    for randomPoint, px, py, pz in zip(randomPoints,pxs,pys,pzs)[-20:]:
+        track = [[randomPoint[0],100,randomPoint[1]],[px,py,pz]]
+        tracks.append(track)
+    eventViewer(tracks)
+
 
     #################################
 
@@ -382,5 +435,11 @@ if __name__ == "__main__":
     #        ]
     #eventViewer(tracks)
 
+
+    randomPoints3d = numpy.zeros((randomPoints.shape[0],3))
+    randomPoints3d[:,0] = randomPoints[:,0]
+    randomPoints3d[:,1] = 100
+    randomPoints3d[:,2] = randomPoints[:,1]
+    eventViewer([],listsOfPoints=[randomPoints3d])
     
     
