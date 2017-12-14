@@ -295,9 +295,9 @@ if __name__ == "__main__":
     root.gROOT.SetBatch(True)
     c = root.TCanvas()
 
-    thetaHist = root.TH1F("theta","",10,0,90)
-    phiHist = root.TH1F("phi","",30,-180,180)
-    energyHist = root.TH1F("energy","",100,0,10)
+    thetaHist = root.TH1F("theta","",90,0,90)
+    phiHist = root.TH1F("phi","",90,-180,180)
+    energyHist = root.TH1F("energy","",50,0,100)
     
     setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
     setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
