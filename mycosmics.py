@@ -165,51 +165,45 @@ def sample(N,emin,emax):
     emin, emax: muon energy bounds in GeV
   returns:
     muons: list of muon objects
-    rateEstimate: rate estimate in Hz
   """
 
   thetamin = 55*pi/180.
   thetamax = 85*pi/180.
 
-  ymin = 200.
-
-  xmin1 = 80.
-  xmax1 = 330.
-  zmin1 = 180.
-  zmax1 = 510
-
-  area1 = (xmax1-xmin1)*(zmax1-zmin1)
-
-  xmin2 = -455
-  xmax2 = -48
-  zmin2 = -735
-  zmax2 = -133
-
-  area2 = (xmax2-xmin2)*(zmax2-zmin2)
-
-  areaTotal = area1 + area2
-
-  area1Frac = float(area1) / (area1 + area2)
-  print "Area 1: {:.1f} cm2 Area 2: {:.1f} cm2 Area 1 frac of total: {:.3f}, area total: {:.1f} cm2".format(area1,area2,area1Frac,areaTotal)
-
   m = MUONMASS
   assert(emin>=m)
   energies, thetas, integralEstimate = mcInt(N,emin,emax,thetamin,thetamax)
   print ("Flux: {0:.3f} Hz cm^-2".format(integralEstimate))
-  rateEstimate = integralEstimate*areaTotal
 
-  # decide if in area1 or area2:
-  isArea1 = ( rand(N) < area1Frac )
+  Npositions = 0
+  phis = None
+  positions = None
+  while Npositions < N:
+    thesePoints, thetasBAD, thesePhis = cosmicPaddles.genPositionsAngles(
+                                                [[cosmicPaddles.cosmic1,cosmicPaddles.cosmic2],
+                                                [cosmicPaddles.cosmic3,cosmicPaddles.cosmic4]],
+                                                nScaleFactor=1.)
 
-  xs = rand(N)*(xmax2-xmin2) + xmin2
-  ys = ones(N)*ymin
-  zs = rand(N)*(zmax2-zmin2) + zmin2
+    # thesePoints/Phis don't come out random between the two sets of paddles, do that now
+    permute = random.permutation(len(thesePhis))
+    randomPoints = thesePoints[permute]
+    randomPhis = thesePhis[permute]
+
+    randomPhis *= pi/180.
+    if phis is None:
+        phis = randomPhis
+        positions = randomPoints
+    else:
+        phis = concatenate((phis,randomPhis),0)
+        positions = concatenate((positions,randomPoints),0)
+    Npositions = len(phis)
+  positions = positions[:N]
+  phis = phis[:N]
+
+  xs = positions[:,0]
+  ys = ones(N)*100.
+  zs = positions[:,1]
   ts = zeros(N)
-
-  xs[isArea1] = rand(N)[isArea1]*(xmax1-xmin1) + xmin1
-  zs[isArea1] = rand(N)[isArea1]*(zmax1-zmin1) + zmin1
-
-  phis = rand(N)*2*math.pi - math.pi
 
   p2s = energies**2 - m**2
   ps = sqrt(p2s)
@@ -227,21 +221,21 @@ def sample(N,emin,emax):
 
   triggered = logical_or(logical_and(wentThrough1,wentThrough2),logical_and(wentThrough3,wentThrough4))
 
-  #xs = xs[triggered]
-  #print("N tries: {} N triggered: {} Fraction: {}".format(len(ys),len(xs),float(len(xs))/len(ys)))
-  #ys = ys[triggered]
-  #zs = zs[triggered]
-  #ts = ts[triggered]
-  #pxs = pxs[triggered]
-  #pys = pys[triggered]
-  #pzs = pzs[triggered]
-  #energies = energies[triggered]
+  xs = xs[triggered]
+  print("N tries: {} N triggered: {} Fraction: {}".format(len(ys),len(xs),float(len(xs))/len(ys)))
+  ys = ys[triggered]
+  zs = zs[triggered]
+  ts = ts[triggered]
+  pxs = pxs[triggered]
+  pys = pys[triggered]
+  pzs = pzs[triggered]
+  energies = energies[triggered]
 
   particles = []
   for i in range(len(xs)):
     tmp = Muon(xs[i],ys[i],zs[i],ts[i],pxs[i],pys[i],pzs[i],energies[i])
     particles.append(tmp)
-  return particles, rateEstimate
+  return particles
 
 if __name__ == "__main__":
 
@@ -271,14 +265,15 @@ if __name__ == "__main__":
                       help='Make ROOT Tree')
   parser.add_argument('--eventviewer','-v', action="store_true",
                       help='Event viewer on each event')
+  parser.add_argument('--eventviewerall','-a', action="store_true",
+                      help='Event viewer on all events at once DANGEROUS on large N events!')
   
   
   args = parser.parse_args()
 
   print "N events:     {0:9}".format(args.nEvents)
   print "Energy range: {0:9.3f} to {1:9.3f} GeV".format(args.minenergy,args.maxenergy)
-  muons, rateEst = sample(args.nEvents,args.minenergy,args.maxenergy)
-  print "Rate: {0} Hz".format(rateEst)
+  muons = sample(args.nEvents,args.minenergy,args.maxenergy)
   print "Outputing HEPEVT file '{0}'".format(args.outfilename)
   with open(args.outfilename,'w') as outfile:
     for i, muon in enumerate(muons):
@@ -334,5 +329,12 @@ if __name__ == "__main__":
   if args.eventviewer:
     print "Starting event viewer!"
     for iMuon, muon in enumerate(muons):
-      print("Event: ".format(iMuon))
+      print("Event: {}".format(iMuon))
       cosmicPaddles.eventViewer([[[muon.x,muon.y,muon.z],[muon.px,muon.py,muon.pz]]])
+
+  if args.eventviewerall:
+    print "Starting event viewer on all events!"
+    tracks = []
+    for iMuon, muon in enumerate(muons):
+      tracks.append([[muon.x,muon.y,muon.z],[muon.px,muon.py,muon.pz]])
+    cosmicPaddles.eventViewer(tracks)
