@@ -243,7 +243,7 @@ if __name__ == "__main__":
   import argparse
 
   minenergy_default = MUONMASS
-  maxenergy_default = 100.
+  maxenergy_default = 1000.
 
   parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
   parser.add_argument('outfilename',
@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
     thetaHist = root.TH1F("theta","",90,0,90)
     phiHist = root.TH1F("phi","",90,-180,180)
-    energyHist = root.TH1F("energy","",50,0,100)
+    energyHist = root.TH1F("energy","",50,0,args.maxenergy)
     
     setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
     setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")

@@ -212,7 +212,7 @@ def findLinePoints(paddle1,paddle2,y=100.):
             #print "  position: ({:5.1f},{:5.1f},{:5.1f}) zenith angle: {angle:4.1f} deg".format(*point,angle=zenithAngleDeg)
 
     if False:
-        fig, ax1 = mpl.subplots()
+        fig, ax1 = mpl.subplots(figsize=(8,8))
         ax1.scatter(phizxs,thetays,s=10,c='b',edgecolors='none',cmap="brg")
         ax1.set_xlabel(r'$\phi_{zx}$ [deg]')
         ax1.set_ylabel(r'$\theta_y$ [deg]')
@@ -241,7 +241,7 @@ tpcBoundaries = [-0.8,49.17,-25,25,-5,95]
 tpcActiveBoundaries = [0.4,47.9,-20,20,0,90]
 
 def eventViewer(tracks,listsOfPoints=[],verbose=False):
-    fig = mpl.figure()
+    fig = mpl.figure(figsize=(10,10))
     ax = fig.add_subplot(111, projection='3d')
     
     for iPaddle, paddle in enumerate(paddles):
@@ -348,7 +348,7 @@ def genPositionsAngles(paddleSets,debugPlots=False,nScaleFactor=0.01):
                 resultPhis = numpy.concatenate((resultPhis,randomPhis),0)
 
     if debugPlots:
-        fig, (ax1,ax2) = mpl.subplots(2)
+        fig, (ax1,ax2) = mpl.subplots(2,figsize=(8,8))
         ax1.set_aspect("equal")
 #        ax2.set_aspect("equal")
         for iColor, points, convexHull in zip(range(len(pointSets)),pointSets,convexHulls):
@@ -370,7 +370,7 @@ def genPositionsAngles(paddleSets,debugPlots=False,nScaleFactor=0.01):
 
         fig.savefig("thetazenithVPhixz.png")
 
-        fig2, ax3 = mpl.subplots()
+        fig2, ax3 = mpl.subplots(figsize=(8,8))
 
         ax3.scatter(90-resultPhis,180-resultThetas,s=10,c='c',edgecolors='none')
         for iColor, angleSet, phiSet in zip(range(len(pointSets)),angleSets,phiSets):
@@ -379,7 +379,7 @@ def genPositionsAngles(paddleSets,debugPlots=False,nScaleFactor=0.01):
         ax3.set_ylabel(r'$\theta_y$ [deg]')
         fig2.savefig("thetayVPhizx")
 
-        fig3, ax4 = mpl.subplots()
+        fig3, ax4 = mpl.subplots(figsize=(8,8))
 
         for iColor, points, convexHull in zip(range(len(pointSets)),pointSets,convexHulls):
             for simplex in convexHull.simplices:
@@ -404,7 +404,7 @@ if __name__ == "__main__":
     pxs = numpy.sin(randomThetas*numpy.pi/180.)*numpy.cos(randomPhis*numpy.pi/180.)
     pzs = numpy.sin(randomThetas*numpy.pi/180.)*numpy.sin(randomPhis*numpy.pi/180.)
 
-    fig, ax = mpl.subplots()
+    fig, ax = mpl.subplots(figsize=(8,8))
 
     ax.scatter(randomPhis,randomThetas,s=10,c='m',edgecolors='none',cmap="brg")
     ax.scatter(numpy.arctan2(pzs,pxs)*180/numpy.pi,numpy.arctan2((pzs**2+pxs**2)**0.5,pys)*180/numpy.pi,s=10,c='c',edgecolors='none',cmap="brg")
@@ -413,6 +413,8 @@ if __name__ == "__main__":
     fig.savefig("again.png")
 
     mpl.close('all')
+
+    eventViewer([])
 
     randomPoints3d = numpy.zeros((randomPoints.shape[0],3))
     randomPoints3d[:,0] = randomPoints[:,0]
