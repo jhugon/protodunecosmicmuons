@@ -243,7 +243,7 @@ if __name__ == "__main__":
   import argparse
 
   minenergy_default = MUONMASS
-  maxenergy_default = 1000.
+  maxenergy_default = 300.
 
   parser = argparse.ArgumentParser(description='Generate cosmic ray muon events in hepevt format.')
   parser.add_argument('outfilename',
@@ -298,27 +298,38 @@ if __name__ == "__main__":
     thetaHist = root.TH1F("theta","",90,0,90)
     phiHist = root.TH1F("phi","",90,-180,180)
     energyHist = root.TH1F("energy","",50,0,args.maxenergy)
+    energyLowHist = root.TH1F("energyLow","",50,0,10)
     
     setHistTitles(thetaHist,"#theta_{zenith} [degrees]","Events/bin")
     setHistTitles(phiHist,"#phi_{azimuth} [degrees]","Events/bin")
     setHistTitles(energyHist,"E_{#mu} [GeV]","Events/bin")
+    setHistTitles(energyLowHist,"E_{#mu} [GeV]","Events/bin")
     
     for muon in muons:
       thetaHist.Fill(muon.thetaz*180/math.pi)
       phiHist.Fill(muon.phiz*180/math.pi)
       energyHist.Fill(muon.e)
+      energyLowHist.Fill(muon.e)
 
     outfileNameBase = os.path.splitext(args.outfilename)[0]
     
     phiHist.Draw()
     c.SaveAs(outfileNameBase+"_phiHist.png")
     c.SaveAs(outfileNameBase+"_phiHist.pdf")
-    energyHist.Draw()
-    c.SaveAs(outfileNameBase+"_energyHist.png")
-    c.SaveAs(outfileNameBase+"_energyHist.pdf")
     thetaHist.Draw()
     c.SaveAs(outfileNameBase+"_thetaHist.png")
     c.SaveAs(outfileNameBase+"_thetaHist.pdf")
+    energyLowHist.Draw()
+    c.SaveAs(outfileNameBase+"_energyLowHist.png")
+    c.SaveAs(outfileNameBase+"_energyLowHist.pdf")
+    energyHist.Draw()
+    c.SaveAs(outfileNameBase+"_energyHist.png")
+    c.SaveAs(outfileNameBase+"_energyHist.pdf")
+    c.SetLogy()
+    energyHist.Draw()
+    c.SaveAs(outfileNameBase+"_energyLogHist.png")
+    c.SaveAs(outfileNameBase+"_energyLogHist.pdf")
+    c.SetLogy(False)
 
   if args.roottree:
     from makeRootTree import makeRootTree
